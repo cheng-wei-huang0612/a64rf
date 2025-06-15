@@ -58,7 +58,7 @@ static inline uint64_t read_d_vreg(const a64rf_state_t* state, a64rf_vreg_idx_t 
     }
     if (lane > 1) {
         // Handle error: invalid lane index
-        fprintf(stderr, "Invalid lane index %d for vreg d[]\n", lane);
+        fprintf(stderr, "Invalid lane index %zu for vreg d[]\n", lane);
         return 0;
     }
     return state->vreg[vreg_idx].d[lane];

@@ -4,8 +4,24 @@
 #include <stddef.h>
 #include <inttypes.h>
 #include <string.h>
+
 #include "a64rf_types.h"
 
+/*---------------------------------------------------------------------------
+ *  Simple helpers for interacting with the a64rf_state_t structure.  These
+ *  routines hide the underlying layout of the register file and make common
+ *  tasks slightly easier for examples and unit tests.  All functions are
+ *  defined as static inline so including this header does not require
+ *  additional linkage steps.
+ *---------------------------------------------------------------------------*/
+
+/*
+ * Retrieve the 64-bit value stored in a general purpose register.
+ *
+ * \param state    Pointer to an a64rf_state_t structure.
+ * \param gpr_idx  Register index to read (X0-X30).
+ * \return         The value contained in the requested register.
+ */
 static inline uint64_t read_val_gpr(const a64rf_state_t* state, a64rf_gpr_idx_t gpr_idx) {
     if (gpr_idx >= GPR_COUNT) {
         fprintf(stderr, "Invalid GPR index %d\n", (int)gpr_idx);
@@ -17,6 +33,15 @@ static inline uint64_t read_val_gpr(const a64rf_state_t* state, a64rf_gpr_idx_t 
 
 
 
+/*
+ * Print the value of a general purpose register using the requested radix.
+ * Supported radixes are "hex", "dec" and "bin".  Passing NULL defaults to
+ * hexadecimal output.
+ *
+ * \param state   CPU state containing the register file.
+ * \param gpr_idx Register index to print.
+ * \param radix   Optional radix string.
+ */
 static inline void print_val_gpr(const a64rf_state_t *state, a64rf_gpr_idx_t gpr_idx,
               const char *radix)
 {
@@ -41,16 +66,30 @@ static inline void print_val_gpr(const a64rf_state_t *state, a64rf_gpr_idx_t gpr
     }
 }
 
+/*
+ * Convenience wrapper to print a register value in hexadecimal.
+ */
 static inline void print_val_gpr_to_hex(const a64rf_state_t *state, a64rf_gpr_idx_t gpr_idx) {
     print_val_gpr(state, gpr_idx, "hex");
 }
 
 
+/*
+ * Convenience wrapper to print a register value in decimal.
+ */
 static inline void print_val_gpr_to_dec(const a64rf_state_t *state, a64rf_gpr_idx_t gpr_idx) {
     print_val_gpr(state, gpr_idx, "dec");
 }
 
 
+/*
+ * Read a 64-bit element from a vector register (d register view).
+ *
+ * \param state     State structure containing vector registers.
+ * \param vreg_idx  Vector register index to access.
+ * \param lane      Lane number within the d[] view (0-1).
+ * \return          Value of the specified lane or 0 on error.
+ */
 static inline uint64_t read_d_vreg(const a64rf_state_t* state, a64rf_vreg_idx_t vreg_idx, size_t lane) {
     if (vreg_idx >= VREG_COUNT) {
         fprintf(stderr, "Invalid vreg index %d\n", (int)vreg_idx);
@@ -64,13 +103,22 @@ static inline uint64_t read_d_vreg(const a64rf_state_t* state, a64rf_vreg_idx_t 
     return state->vreg[vreg_idx].d[lane];
 }
 
+/* Read the low 64 bits of a vector register. */
 static inline uint64_t read_d_vreg_lo(const a64rf_state_t* state, a64rf_vreg_idx_t vreg_idx) {
     return read_d_vreg(state, vreg_idx, 0);
 }
+/* Read the high 64 bits of a vector register. */
 static inline uint64_t read_d_vreg_hi(const a64rf_state_t* state, a64rf_vreg_idx_t vreg_idx) {
     return read_d_vreg(state, vreg_idx, 1);
 }
 
+/*
+ * Read a 32-bit lane from the s[] view of a vector register.
+ *
+ * \param state     State structure containing vector registers.
+ * \param vreg_idx  Vector register index.
+ * \param lane      Lane number (0-3).
+ */
 static inline uint32_t read_s_vreg(const a64rf_state_t* state, a64rf_vreg_idx_t vreg_idx, size_t lane) {
     if (vreg_idx >= VREG_COUNT) {
         fprintf(stderr, "Invalid vreg index %d\n", (int)vreg_idx);
@@ -84,6 +132,13 @@ static inline uint32_t read_s_vreg(const a64rf_state_t* state, a64rf_vreg_idx_t 
     return state->vreg[vreg_idx].s[lane];
 }
 
+/*
+ * Read a 16-bit lane from the h[] view of a vector register.
+ *
+ * \param state     Pointer to the state structure.
+ * \param vreg_idx  Vector register index.
+ * \param lane      Lane number (0-7).
+ */
 static inline uint16_t read_h_vreg(const a64rf_state_t* state, a64rf_vreg_idx_t vreg_idx, size_t lane) {
     if (vreg_idx >= VREG_COUNT) {
         fprintf(stderr, "Invalid vreg index %d\n", (int)vreg_idx);
@@ -97,6 +152,13 @@ static inline uint16_t read_h_vreg(const a64rf_state_t* state, a64rf_vreg_idx_t 
     return state->vreg[vreg_idx].h[lane];
 }
 
+/*
+ * Read an 8-bit lane from the b[] view of a vector register.
+ *
+ * \param state     Pointer to the state structure.
+ * \param vreg_idx  Vector register index.
+ * \param lane      Lane number (0-15).
+ */
 static inline uint8_t read_b_vreg(const a64rf_state_t* state, a64rf_vreg_idx_t vreg_idx, size_t lane) {
     if (vreg_idx >= VREG_COUNT) {
         fprintf(stderr, "Invalid vreg index %d\n", (int)vreg_idx);
@@ -110,6 +172,9 @@ static inline uint8_t read_b_vreg(const a64rf_state_t* state, a64rf_vreg_idx_t v
     return state->vreg[vreg_idx].b[lane];
 }
 
+/*
+ * Print the contents of a vector register as two 64-bit values.
+ */
 static inline void print_vreg_as_2d(const a64rf_state_t *state, a64rf_vreg_idx_t vreg_idx) {
     printf("V%d: d[0] = 0x%016" PRIx64 ", d[1] = 0x%016" PRIx64 "\n",
         (int)vreg_idx,
@@ -117,6 +182,9 @@ static inline void print_vreg_as_2d(const a64rf_state_t *state, a64rf_vreg_idx_t
         read_d_vreg_hi(state, vreg_idx));
 }
 
+/*
+ * Print a vector register interpreted as four 32-bit words.
+ */
 static inline void print_vreg_as_4s(const a64rf_state_t *state, a64rf_vreg_idx_t vreg_idx) {
     printf("V%d: s[0] = 0x%08" PRIx32 ", s[1] = 0x%08" PRIx32
            ", s[2] = 0x%08" PRIx32 ", s[3] = 0x%08" PRIx32 "\n",
@@ -127,6 +195,9 @@ static inline void print_vreg_as_4s(const a64rf_state_t *state, a64rf_vreg_idx_t
         read_s_vreg(state, vreg_idx, 3));
 }
 
+/*
+ * Print a vector register as eight 16-bit halfwords.
+ */
 static inline void print_vreg_as_8h(const a64rf_state_t *state, a64rf_vreg_idx_t vreg_idx) {
     printf("V%d: ", (int)vreg_idx);
     for (int i = 0; i < 8; ++i) {
@@ -134,6 +205,9 @@ static inline void print_vreg_as_8h(const a64rf_state_t *state, a64rf_vreg_idx_t
     }
 }
 
+/*
+ * Print a vector register as sixteen bytes.
+ */
 static inline void print_vreg_as_16b(const a64rf_state_t *state, a64rf_vreg_idx_t vreg_idx) {
     printf("V%d: ", (int)vreg_idx);
     for (int i = 0; i < 16; ++i) {
@@ -142,6 +216,9 @@ static inline void print_vreg_as_16b(const a64rf_state_t *state, a64rf_vreg_idx_
 }
 
 
+/*
+ * Write a 64-bit value to a general purpose register.
+ */
 static inline void write_val_gpr(a64rf_state_t *state, a64rf_gpr_idx_t gpr_idx, uint64_t val) {
     if (gpr_idx >= GPR_COUNT) {
         fprintf(stderr, "Invalid GPR index %d\n", (int)gpr_idx);
@@ -149,6 +226,9 @@ static inline void write_val_gpr(a64rf_state_t *state, a64rf_gpr_idx_t gpr_idx, 
     }
     state->gpr[gpr_idx].val = val;
 }
+/*
+ * Write a 64-bit lane in the d[] view of a vector register.
+ */
 static inline void
 write_d_vreg(a64rf_state_t *state, a64rf_vreg_idx_t vreg_idx,
              size_t lane, uint64_t val)
@@ -165,15 +245,18 @@ write_d_vreg(a64rf_state_t *state, a64rf_vreg_idx_t vreg_idx,
 
 }
 
+/* Helper to write the low 64 bits of a vector register. */
 static inline void
 write_d_vreg_lo(a64rf_state_t *s, a64rf_vreg_idx_t idx, uint64_t val)
 { write_d_vreg(s, idx, 0, val); }
 
+/* Helper to write the high 64 bits of a vector register. */
 static inline void
 write_d_vreg_hi(a64rf_state_t *s, a64rf_vreg_idx_t idx, uint64_t val)
 { write_d_vreg(s, idx, 1, val); }
 
 /* ───────────── V.s (4×32) ───────────── */
+/* Write a 32-bit lane in the s[] view of a vector register. */
 static inline void
 write_s_vreg(a64rf_state_t *state, a64rf_vreg_idx_t vreg_idx,
              size_t lane, uint32_t val)
@@ -193,7 +276,7 @@ write_s_vreg(a64rf_state_t *state, a64rf_vreg_idx_t vreg_idx,
 static inline void
 write_h_vreg(a64rf_state_t *state, a64rf_vreg_idx_t vreg_idx,
              size_t lane, uint16_t val)
-{
+{ /* Write a 16-bit lane in the h[] view. */
     if (vreg_idx >= VREG_COUNT) {
         fprintf(stderr, "Invalid vreg index %d\n", (int)vreg_idx);
         return;
@@ -209,7 +292,7 @@ write_h_vreg(a64rf_state_t *state, a64rf_vreg_idx_t vreg_idx,
 static inline void
 write_b_vreg(a64rf_state_t *state, a64rf_vreg_idx_t vreg_idx,
              size_t lane, uint8_t val)
-{
+{ /* Write an 8-bit lane in the b[] view. */
     if (vreg_idx >= VREG_COUNT) {
         fprintf(stderr, "Invalid vreg index %d\n", (int)vreg_idx);
         return;
@@ -225,7 +308,7 @@ write_b_vreg(a64rf_state_t *state, a64rf_vreg_idx_t vreg_idx,
  * 若常用整塊搬移，可加下列 API；用戶自行準備來源 struct 或陣列。        */
 static inline void
 write_vreg_all(a64rf_state_t *state, a64rf_vreg_idx_t idx, const vreg_t *src)
-{
+{ /* Copy an entire 128-bit vector register from the provided source. */
     if (idx >= VREG_COUNT) {
         fprintf(stderr, "Invalid vreg index %d\n", (int)idx);
         return;
@@ -238,10 +321,12 @@ write_vreg_all(a64rf_state_t *state, a64rf_vreg_idx_t idx, const vreg_t *src)
 
 /*───────────────────── NZCV pretty-print (N Z C V) ───────────────────*/
 
+/* Return the current NZCV flags from the state structure. */
 static inline nzcv_t read_nzcv(const a64rf_state_t *state) {
     return state->nzcv;
 }
 
+/* Display the NZCV flags in a human-friendly format. */
 static inline void print_nzcv(const a64rf_state_t *state) {
     nzcv_t f = read_nzcv(state);
     printf("NZCV = N:%u Z:%u C:%u V:%u\n",

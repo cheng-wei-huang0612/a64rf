@@ -3,9 +3,7 @@
 #include <string.h>
 #include <inttypes.h>
 
-#include "a64rf_types.h"
-#include "a64rf_api.h"
-#include "a64rf_op.h"
+#include "a64rf.h"
 
 
 

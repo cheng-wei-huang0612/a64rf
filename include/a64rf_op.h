@@ -29,7 +29,7 @@ static inline void set_flags_logical(uint64_t res, nzcv_t *f)
     f->N = res >> 63;
     f->Z = (res == 0);
     f->C = 0;
-    f->V = 0;         /* 依規格，ANDS/BICS/EORS 把 C/V 置 0 */  /**/
+    f->V = 0;         /* 依規格，ANDS/BICS/EORS 把 C/V 置 0 */
 }
 
 
@@ -189,6 +189,21 @@ static inline void eors_xform(a64rf_state_t *s,
     uint64_t src_m = read_val_gpr(s, Xm);
 
     uint64_t result = src_n ^ src_m;
+
+    set_flags_logical(result, &s->nzcv);
+    write_val_gpr(s, Xd, result);
+}
+
+
+static inline void bics_xform(a64rf_state_t *s,
+                              const a64rf_gpr_idx_t Xd,
+                              const a64rf_gpr_idx_t Xn,
+                              const a64rf_gpr_idx_t Xm)
+{
+    uint64_t src_n = read_val_gpr(s, Xn);
+    uint64_t src_m = read_val_gpr(s, Xm);
+
+    uint64_t result = src_n & ~src_m;
 
     set_flags_logical(result, &s->nzcv);
     write_val_gpr(s, Xd, result);

@@ -7,10 +7,7 @@
 #include "a64rf_api.h"
 #include "a64rf_op.h"
 
-#define DUMP_GPR(s, r)  print_val_gpr_to_hex(&(s), r)
-#define DUMP_NZCV(s)    printf("NZCV = N:%u Z:%u C:%u V:%u\n", \
-                               (s).nzcv.N, (s).nzcv.Z, \
-                               (s).nzcv.C, (s).nzcv.V)
+
 
 int main(void)
 {
@@ -25,12 +22,18 @@ int main(void)
     /* Stage 2: ADCS chaining carry */
     puts("=== ADCS X3, X2, X2 ===");
     adcs_xform(&s, X3, X2, X2);
-    DUMP_GPR(s, X3);  DUMP_NZCV(s);
+
+    print_val_gpr_to_hex(&s, X3);
+    print_nzcv(&s);
+
 
     /* Stage 3: SUBS negative result */
     puts("\n=== SUBS X4, X2, X3 ===");
     subs_xform(&s, X4, X2, X3);
-    DUMP_GPR(s, X4);  DUMP_NZCV(s);
+
+    print_val_gpr_to_hex(&s, X4);
+    print_nzcv(&s);
+
 
     return 0;
 }

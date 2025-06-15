@@ -7,10 +7,6 @@
 #include "a64rf_api.h"
 #include "a64rf_op.h"
 
-#define DUMP_GPR(s, r)  print_val_gpr_to_hex(&(s), r)
-#define DUMP_NZCV(s)    printf("NZCV = N:%u Z:%u C:%u V:%u\n", \
-                               (s).nzcv.N, (s).nzcv.Z, \
-                               (s).nzcv.C, (s).nzcv.V)
 
 int main(void)
 {
@@ -23,25 +19,33 @@ int main(void)
     /* Stage 4: SBCS with borrow */
     puts("=== SBCS X5, X3, X2 ===");
     sbcs_xform(&s, X5, X3, X2);
-    DUMP_GPR(s, X5);  DUMP_NZCV(s);
+
+    print_val_gpr_to_hex(&s, X5);
+    print_nzcv(&s);
 
     /* Stage 5: CMP and CMN */
     puts("\n=== CMP X3, X3 ===");
     cmp_xform(&s, X3, X3);
-    DUMP_NZCV(s);
+
+    print_nzcv(&s);
 
     puts("\n=== CMN X3, X2 ===");
     cmn_xform(&s, X3, X2);
-    DUMP_NZCV(s);
+    print_nzcv(&s);
+
 
     /* Stage 6: ANDS and EORS */
     puts("\n=== ANDS X6, X3, X2 ===");
     ands_xform(&s, X6, X3, X2);
-    DUMP_GPR(s, X6);  DUMP_NZCV(s);
+
+    print_val_gpr_to_hex(&s, X6);
+    print_nzcv(&s);
 
     puts("\n=== EORS X7, X3, X3 ===");
     eors_xform(&s, X7, X3, X3);
-    DUMP_GPR(s, X7);  DUMP_NZCV(s);
+    print_val_gpr_to_hex(&s, X7);
+    print_nzcv(&s);
+
 
     return 0;
 }

@@ -8,6 +8,7 @@
 #include "a64rf_op.h"
 
 
+
 int main(void)
 {
     a64rf_state_t s;
@@ -18,15 +19,19 @@ int main(void)
     write_val_gpr(&s, X1, 0x20ULL);
     write_val_gpr(&s, X2, 0ULL);
     puts("=== Initial ===");
+
     print_val_gpr_to_hex(&s, X0);
     print_val_gpr_to_hex(&s, X1);
     print_nzcv(&s);
 
+
     /* Stage 1: ADDS overflow boundary */
     puts("\n=== ADDS X2, X0, X1 ===");
     adds_xform(&s, X2, X0, X1);
+
     print_val_gpr_to_hex(&s, X2);
     print_nzcv(&s);
+
 
     return 0;
 }

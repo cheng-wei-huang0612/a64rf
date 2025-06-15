@@ -8,6 +8,7 @@
 #include "a64rf_op.h"
 
 
+
 int main(void)
 {
     a64rf_state_t s;
@@ -21,14 +22,18 @@ int main(void)
     /* Stage 2: ADCS chaining carry */
     puts("=== ADCS X3, X2, X2 ===");
     adcs_xform(&s, X3, X2, X2);
+
     print_val_gpr_to_hex(&s, X3);
     print_nzcv(&s);
+
 
     /* Stage 3: SUBS negative result */
     puts("\n=== SUBS X4, X2, X3 ===");
     subs_xform(&s, X4, X2, X3);
+
     print_val_gpr_to_hex(&s, X4);
     print_nzcv(&s);
+
 
     return 0;
 }

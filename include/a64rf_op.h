@@ -1,72 +1,195 @@
 /* a64rf_op.h */
 #pragma once
-#include "a64rf_state.h"
-#include "a64rf_regs.h"
+#include "a64rf_types.h"
 
-/* dst = a * b   (MUL 不影響 NZCV，但我們仍把 flags 帶進再帶出) */
-static inline void mul_xform(a64rf_state_t *s,
-                             a64rf_reg d, a64rf_reg a, a64rf_reg b)
-{
-    uint64_t lhs = s->gpr[a].val;
-    uint64_t rhs = s->gpr[b].val;
-    uint64_t in_flags  = s->nzcv;
-    uint64_t out_flags;
-    uint64_t res;
 
-    __asm__ volatile (
-        "msr nzcv, %[in_f]\n\t"          /* 把 struct 裡的旗標寫進系統暫存器 */
-        "mul %[r], %[x], %[y]\n\t"       /* 執行乘法 (不改 NZCV) */
-        "mrs %[out_f], nzcv"             /* 取回 (保留原值)           */
-        : [r] "=&r"(res), [out_f] "=&r"(out_flags)
-        : [x] "r"(lhs), [y] "r"(rhs), [in_f] "r"(in_flags)
-        : "cc"                           /* 告訴編譯器此 asm 讀寫 flags */
-    );
+/*--------------------------------------------------------------------
+ *  add_with_carry_u64()
+ *  ─ 依 Arm A64《AddWithCarry》偽碼，計算 result 及 NZCV。
+ *------------------------------------------------------------------*/
+static inline uint64_t add_with_carry_u64(uint64_t a, uint64_t b,
+                   unsigned carry_in, nzcv_t *f) {
+    uint64_t res = a + b + (uint64_t)carry_in;
 
-    s->gpr[d].val = res;
-    s->nzcv       = out_flags;
+    /* Carry：無號加法進位 */
+    f->C = carry_in ? (res <= a) : (res < a);
+
+    /* Overflow：兩輸入同號且結果異號 */
+    f->V = (~(a ^ b) & (a ^ res)) >> 63;
+
+    /* Zero／Negative */
+    f->Z = (res == 0);
+    f->N = res >> 63;
+
+    return res;
 }
 
-/* dst = a + b   (使用 ADD 產生並更新 NZCV) */
-static inline void add_xform(a64rf_state_t *s,
-                             a64rf_reg d, a64rf_reg a, a64rf_reg b)
+static inline void set_flags_logical(uint64_t res, nzcv_t *f)
 {
-    uint64_t lhs = s->gpr[a].val;
-    uint64_t rhs = s->gpr[b].val;
-    uint64_t in_flags  = s->nzcv;
-    uint64_t out_flags;
-    uint64_t res;
+    f->N = res >> 63;
+    f->Z = (res == 0);
+    f->C = 0;
+    f->V = 0;         /* 依規格，ANDS/BICS/EORS 把 C/V 置 0 */  /**/
+}
 
-    __asm__ volatile (
-        "msr nzcv, %[in_f]\n\t"          /* 將原 flags 填入 */
-        "add %[r], %[x], %[y]\n\t"
-        "mrs  %[out_f], nzcv"            /* 讀出新的 NZCV */
-        : [r] "=&r"(res), [out_f] "=&r"(out_flags)
-        : [x] "r"(lhs), [y] "r"(rhs), [in_f] "r"(in_flags)
-        : "cc"
-    );
 
-    s->gpr[d].val = res;
-    s->nzcv       = out_flags;
+
+static inline void mul_xform(a64rf_state_t *s,
+                             const a64rf_gpr_idx_t Xd, 
+                             const a64rf_gpr_idx_t Xn, 
+                             const a64rf_gpr_idx_t Xm) 
+{
+    uint64_t src_n = read_val_gpr(s, Xn);
+    uint64_t src_m = read_val_gpr(s, Xm);
+
+    uint64_t result = src_n * src_m;
+
+    write_val_gpr(s, Xd, result);
+}
+
+
+static inline void add_xform(a64rf_state_t *s,
+                              const a64rf_gpr_idx_t Xd,
+                              const a64rf_gpr_idx_t Xn,
+                              const a64rf_gpr_idx_t Xm)
+{
+    uint64_t src_n = read_val_gpr(s, Xn);
+    uint64_t src_m = read_val_gpr(s, Xm);
+
+    uint64_t result = src_n + src_m;
+
+    write_val_gpr(s, Xd, result);
 }
 
 static inline void adds_xform(a64rf_state_t *s,
-                             a64rf_reg d, a64rf_reg a, a64rf_reg b)
+                              const a64rf_gpr_idx_t Xd,
+                              const a64rf_gpr_idx_t Xn,
+                              const a64rf_gpr_idx_t Xm)
 {
-    uint64_t lhs = s->gpr[a].val;
-    uint64_t rhs = s->gpr[b].val;
-    uint64_t in_flags  = s->nzcv;
-    uint64_t out_flags;
-    uint64_t res;
+    uint64_t src_n = read_val_gpr(s, Xn);
+    uint64_t src_m = read_val_gpr(s, Xm);
 
-    __asm__ volatile (
-        "msr nzcv, %[in_f]\n\t"          /* 將原 flags 填入 */
-        "adds %[r], %[x], %[y]\n\t"
-        "mrs  %[out_f], nzcv"            /* 讀出新的 NZCV */
-        : [r] "=&r"(res), [out_f] "=&r"(out_flags)
-        : [x] "r"(lhs), [y] "r"(rhs), [in_f] "r"(in_flags)
-        : "cc"
-    );
+    nzcv_t   flags;
+    uint64_t result = add_with_carry_u64(src_n, src_m, /*carry_in=*/0, &flags);
 
-    s->gpr[d].val = res;
-    s->nzcv       = out_flags;
+    s->nzcv = flags;
+    write_val_gpr(s, Xd, result);
+}
+
+static inline void subs_xform(a64rf_state_t *s,
+                              const a64rf_gpr_idx_t Xd,
+                              const a64rf_gpr_idx_t Xn,
+                              const a64rf_gpr_idx_t Xm)
+{
+    uint64_t src_n = read_val_gpr(s, Xn);
+    uint64_t src_m = ~read_val_gpr(s, Xm);
+
+    nzcv_t   flags;
+    uint64_t result = add_with_carry_u64(src_n, src_m, 1, &flags);
+
+    s->nzcv = flags;
+    write_val_gpr(s, Xd, result);
+}
+
+static inline void cmp_xform(a64rf_state_t *s,
+                             const a64rf_gpr_idx_t Xn,
+                             const a64rf_gpr_idx_t Xm)
+{
+    uint64_t src_n = read_val_gpr(s, Xn);
+    uint64_t src_m = ~read_val_gpr(s, Xm);
+
+    nzcv_t flags;
+    (void)add_with_carry_u64(src_n, src_m, 1, &flags);
+
+    s->nzcv = flags;
+}
+
+static inline void cmn_xform(a64rf_state_t *s,
+                             const a64rf_gpr_idx_t Xn,
+                             const a64rf_gpr_idx_t Xm)
+{
+    uint64_t src_n = read_val_gpr(s, Xn);
+    uint64_t src_m = read_val_gpr(s, Xm);
+
+    nzcv_t flags;
+    (void)add_with_carry_u64(src_n, src_m, 0, &flags);
+
+    s->nzcv = flags;
+}
+
+
+static inline void adcs_xform(a64rf_state_t *s,
+                              const a64rf_gpr_idx_t Xd,
+                              const a64rf_gpr_idx_t Xn,
+                              const a64rf_gpr_idx_t Xm)
+{
+    uint64_t src_n   = read_val_gpr(s, Xn);
+    uint64_t src_m   = read_val_gpr(s, Xm);
+    unsigned carry_in = s->nzcv.C;
+
+    nzcv_t   flags;
+    uint64_t result = add_with_carry_u64(src_n, src_m, carry_in, &flags);
+
+    s->nzcv = flags;
+    write_val_gpr(s, Xd, result);
+}
+
+static inline void sbcs_xform(a64rf_state_t *s,
+                              const a64rf_gpr_idx_t Xd,
+                              const a64rf_gpr_idx_t Xn,
+                              const a64rf_gpr_idx_t Xm)
+{
+    uint64_t src_n   = read_val_gpr(s, Xn);
+    uint64_t src_m   = ~read_val_gpr(s, Xm);
+    unsigned carry_in = s->nzcv.C;
+
+    nzcv_t   flags;
+    uint64_t result = add_with_carry_u64(src_n, src_m, carry_in, &flags);
+
+    s->nzcv = flags;
+    write_val_gpr(s, Xd, result);
+}
+
+static inline void negs_xform(a64rf_state_t *s,
+                              const a64rf_gpr_idx_t Xd,
+                              const a64rf_gpr_idx_t Xm)
+{
+    uint64_t src_n = 0;
+    uint64_t src_m = ~read_val_gpr(s, Xm);
+
+    nzcv_t   flags;
+    uint64_t result = add_with_carry_u64(src_n, src_m, 1, &flags);
+
+    s->nzcv = flags;
+    write_val_gpr(s, Xd, result);
+}
+
+
+static inline void ands_xform(a64rf_state_t *s,
+                              const a64rf_gpr_idx_t Xd,
+                              const a64rf_gpr_idx_t Xn,
+                              const a64rf_gpr_idx_t Xm)
+{
+    uint64_t src_n = read_val_gpr(s, Xn);
+    uint64_t src_m = read_val_gpr(s, Xm);
+
+    uint64_t result = src_n & src_m;
+
+    set_flags_logical(result, &s->nzcv);
+    write_val_gpr(s, Xd, result);
+}
+
+
+static inline void eors_xform(a64rf_state_t *s,
+                              const a64rf_gpr_idx_t Xd,
+                              const a64rf_gpr_idx_t Xn,
+                              const a64rf_gpr_idx_t Xm)
+{
+    uint64_t src_n = read_val_gpr(s, Xn);
+    uint64_t src_m = read_val_gpr(s, Xm);
+
+    uint64_t result = src_n ^ src_m;
+
+    set_flags_logical(result, &s->nzcv);
+    write_val_gpr(s, Xd, result);
 }

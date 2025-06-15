@@ -5,7 +5,7 @@
 
 #include "a64rf_types.h"
 #include "a64rf_api.h"
-#include "a64rf_op.h"
+#include "a64rf_op_gpr.h"
 
 
 int main(void)

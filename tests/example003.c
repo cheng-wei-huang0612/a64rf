@@ -39,10 +39,7 @@ int main(void)
     print_val_gpr_to_hex(&s, X6);
     print_nzcv(&s);
 
-    puts("\n=== EORS X7, X3, X3 ===");
-    eors_xform(&s, X7, X3, X3);
-    print_val_gpr_to_hex(&s, X7);
-    print_nzcv(&s);
+
 
 
     return 0;

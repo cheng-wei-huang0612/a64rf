@@ -48,6 +48,7 @@ static inline void mul_xform(a64rf_state_t *s,
 }
 
 
+
 static inline void add_xform(a64rf_state_t *s,
                               const a64rf_gpr_idx_t Xd,
                               const a64rf_gpr_idx_t Xn,
@@ -57,6 +58,29 @@ static inline void add_xform(a64rf_state_t *s,
     uint64_t src_m = read_val_gpr(s, Xm);
 
     uint64_t result = src_n + src_m;
+
+    write_val_gpr(s, Xd, result);
+}
+
+/*--------------------------------------------------------------------
+ *  add_xform_imm()
+ *  ─ Xd = Xn + imm (imm is 12‑bit unsigned, no shift)
+ *------------------------------------------------------------------*/
+static inline void add_xform_imm(a64rf_state_t *s,
+                                 const a64rf_gpr_idx_t Xd,
+                                 const a64rf_gpr_idx_t Xn,
+                                 uint32_t imm)
+{
+    /* A64 ADD (immediate) encodes a 12‑bit literal (0‑4095). */
+    if (imm > 0xFFFu) {
+        fprintf(stderr,
+                "add_xform_imm: imm value 0x%X exceeds 12‑bit range (0‑0xFFF)\n",
+                imm);
+        return;
+    }
+
+    uint64_t src_n = read_val_gpr(s, Xn);
+    uint64_t result = src_n + (uint64_t)imm;
 
     write_val_gpr(s, Xd, result);
 }
@@ -180,7 +204,129 @@ static inline void ands_xform(a64rf_state_t *s,
 }
 
 
-static inline void eors_xform(a64rf_state_t *s,
+/*--------------------------------------------------------------------
+ *  Logical/Arithmetic shifts and Rotate Right by register (64‑bit)
+ *------------------------------------------------------------------*/
+static inline void lsl_xform(a64rf_state_t *s,
+                              const a64rf_gpr_idx_t Xd,
+                              const a64rf_gpr_idx_t Xn,
+                              const a64rf_gpr_idx_t Xm)
+{
+    uint64_t src_n  = read_val_gpr(s, Xn);
+    uint64_t amount = read_val_gpr(s, Xm) & 63;   /* use low‑order 6 bits */
+
+    uint64_t result = src_n << amount;
+
+    write_val_gpr(s, Xd, result);
+}
+
+static inline void lsl_xform_imm(a64rf_state_t *s,
+                                 const a64rf_gpr_idx_t Xd,
+                                 const a64rf_gpr_idx_t Xn,
+                                 unsigned imm6)
+{
+    if (imm6 > 63) {
+        fprintf(stderr, "lsl_xform_imm: shift amount %u out of range\n", imm6);
+        return;
+    }
+
+    uint64_t src_n  = read_val_gpr(s, Xn);
+    uint64_t result = src_n << imm6;
+
+    write_val_gpr(s, Xd, result);
+}
+
+static inline void lsr_xform(a64rf_state_t *s,
+                              const a64rf_gpr_idx_t Xd,
+                              const a64rf_gpr_idx_t Xn,
+                              const a64rf_gpr_idx_t Xm)
+{
+    uint64_t src_n  = read_val_gpr(s, Xn);
+    uint64_t amount = read_val_gpr(s, Xm) & 63;
+
+    uint64_t result = src_n >> amount;
+
+    write_val_gpr(s, Xd, result);
+}
+
+static inline void lsr_xform_imm(a64rf_state_t *s,
+                                 const a64rf_gpr_idx_t Xd,
+                                 const a64rf_gpr_idx_t Xn,
+                                 unsigned imm6)
+{
+    if (imm6 > 63) {
+        fprintf(stderr, "lsr_xform_imm: shift amount %u out of range\n", imm6);
+        return;
+    }
+
+    uint64_t src_n  = read_val_gpr(s, Xn);
+    uint64_t result = src_n >> imm6;
+
+    write_val_gpr(s, Xd, result);
+}
+
+static inline void asr_xform(a64rf_state_t *s,
+                              const a64rf_gpr_idx_t Xd,
+                              const a64rf_gpr_idx_t Xn,
+                              const a64rf_gpr_idx_t Xm)
+{
+    int64_t  src_n  = (int64_t)read_val_gpr(s, Xn);
+    uint64_t amount = read_val_gpr(s, Xm) & 63;
+
+    uint64_t result = (uint64_t)(src_n >> amount);
+
+    write_val_gpr(s, Xd, result);
+}
+
+static inline void asr_xform_imm(a64rf_state_t *s,
+                                 const a64rf_gpr_idx_t Xd,
+                                 const a64rf_gpr_idx_t Xn,
+                                 unsigned imm6)
+{
+    if (imm6 > 63) {
+        fprintf(stderr, "asr_xform_imm: shift amount %u out of range\n", imm6);
+        return;
+    }
+
+    int64_t  src_n  = (int64_t)read_val_gpr(s, Xn);
+    uint64_t result = (uint64_t)(src_n >> imm6);
+
+    write_val_gpr(s, Xd, result);
+}
+
+static inline void ror_xform(a64rf_state_t *s,
+                              const a64rf_gpr_idx_t Xd,
+                              const a64rf_gpr_idx_t Xn,
+                              const a64rf_gpr_idx_t Xm)
+{
+    uint64_t src_n  = read_val_gpr(s, Xn);
+    uint64_t amount = read_val_gpr(s, Xm) & 63;
+
+    uint64_t result = (src_n >> amount) | (src_n << ((64 - amount) & 63));
+
+    write_val_gpr(s, Xd, result);
+}
+
+static inline void ror_xform_imm(a64rf_state_t *s,
+                                 const a64rf_gpr_idx_t Xd,
+                                 const a64rf_gpr_idx_t Xn,
+                                 unsigned imm6)
+{
+    if (imm6 > 63) {
+        fprintf(stderr, "ror_xform_imm: rotate amount %u out of range\n", imm6);
+        return;
+    }
+
+    uint64_t src_n  = read_val_gpr(s, Xn);
+    uint64_t amount    = imm6 & 63;
+    uint64_t result = (src_n >> amount) | (src_n << ((64 - amount) & 63));
+
+    write_val_gpr(s, Xd, result);
+}
+
+
+
+static inline void bic_xform(a64rf_state_t *s,
                               const a64rf_gpr_idx_t Xd,
                               const a64rf_gpr_idx_t Xn,
                               const a64rf_gpr_idx_t Xm)
@@ -188,12 +334,10 @@ static inline void eors_xform(a64rf_state_t *s,
     uint64_t src_n = read_val_gpr(s, Xn);
     uint64_t src_m = read_val_gpr(s, Xm);
 
-    uint64_t result = src_n ^ src_m;
+    uint64_t result = src_n & ~src_m;
 
-    set_flags_logical(result, &s->nzcv);
     write_val_gpr(s, Xd, result);
 }
-
 
 static inline void bics_xform(a64rf_state_t *s,
                               const a64rf_gpr_idx_t Xd,
@@ -206,5 +350,18 @@ static inline void bics_xform(a64rf_state_t *s,
     uint64_t result = src_n & ~src_m;
 
     set_flags_logical(result, &s->nzcv);
+    write_val_gpr(s, Xd, result);
+}
+
+static inline void orr_xform(a64rf_state_t *s,
+                              const a64rf_gpr_idx_t Xd,
+                              const a64rf_gpr_idx_t Xn,
+                              const a64rf_gpr_idx_t Xm)
+{
+    uint64_t src_n = read_val_gpr(s, Xn);
+    uint64_t src_m = read_val_gpr(s, Xm);
+
+    uint64_t result = src_n | src_m;
+
     write_val_gpr(s, Xd, result);
 }

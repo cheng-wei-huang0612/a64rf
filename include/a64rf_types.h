@@ -27,6 +27,8 @@ typedef enum a64rf_gpr_idx {
     X24,      X25, X26, X27,
     X28,      X29, X30,
 
+    XZR, SP,
+
     GPR_IDX_MAX               /* Marks the end of the enum and is not a reg */
 } a64rf_gpr_idx_t;
 
@@ -69,6 +71,11 @@ typedef enum a64rf_vreg_idx {
     VREG_IDX_MAX              /* Number of vector registers */
 } a64rf_vreg_idx_t;
 
+#define VREG_B_LANE_COUNT 16
+#define VREG_H_LANE_COUNT 8
+#define VREG_S_LANE_COUNT 4
+#define VREG_D_LANE_COUNT 2
+
 
 /*
  * Representation of a 128-bit vector register.  The anonymous union exposes
@@ -91,18 +98,35 @@ typedef struct {
 #define VREG_COUNT   ((size_t)VREG_IDX_MAX)
 
 
+
+
 /*
  * Aggregate snapshot of the CPU state.  The structure contains arrays of all
  * general purpose and vector registers along with the stack pointer and the
  * NZCV flags.  It is the primary object passed to the helper functions in
  * this project.
  */
+
+ /*----------------------------------------------------------
+ *  FPSR (Floating-point Status Register) ─ 目前只建 QC。
+ *  QC = bit 27 (Armv8-A A64 實體位置)。
+ *---------------------------------------------------------*/
+typedef union {
+    struct { unsigned _pad_0_26:27, QC:1, _pad_28_31:4; };
+    uint32_t word;
+} fpsr_t;
+
+
+
+#define MEMORY_SIZE 256
+
+
+
 typedef struct {
     gpr_t    gpr[GPR_COUNT];
     vreg_t   vreg[VREG_COUNT];
-    uint64_t sp;
-    nzcv_t   nzcv;
+    uint64_t stack[MEMORY_SIZE];
+
+    nzcv_t   nzcv;   /* PSTATE.NZCV               */
+    fpsr_t   fpsr;   /* FPSR.QC (飽和累積旗標)     */
 } a64rf_state_t;
-
-
-

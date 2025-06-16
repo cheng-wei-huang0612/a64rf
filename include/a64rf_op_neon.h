@@ -377,10 +377,98 @@ static inline uint32_t sat_sub_u32(uint32_t a, uint32_t b, int *sat)
     return (uint32_t)(a - b);
 }
 
+
 static inline uint64_t sat_sub_u64(uint64_t a, uint64_t b, int *sat)
 {
     if (a < b) { *sat = 1; return 0; }
     return a - b;
+}
+
+
+/*====================  Signed QSHL  (SQSHL)  =====================*/
+static inline int8_t  sat_shl_s8 (int8_t a, int8_t sh, int *sat) {
+    if (sh >= 0) {
+        if (sh >= 7) { *sat = 1; return (a < 0) ? INT8_MIN : INT8_MAX; }
+        int16_t tmp = (int16_t)a << sh;
+        if (tmp > INT8_MAX) { *sat = 1; return INT8_MAX; }
+        if (tmp < INT8_MIN) { *sat = 1; return INT8_MIN; }
+        return (int8_t)tmp;
+    }
+    return (int8_t)(a >> (-sh));
+}
+
+static inline int16_t sat_shl_s16(int16_t a, int16_t sh, int *sat) {
+    if (sh >= 0) {
+        if (sh >= 15) { *sat = 1; return (a < 0) ? INT16_MIN : INT16_MAX; }
+        int32_t tmp = (int32_t)a << sh;
+        if (tmp > INT16_MAX) { *sat = 1; return INT16_MAX; }
+        if (tmp < INT16_MIN) { *sat = 1; return INT16_MIN; }
+        return (int16_t)tmp;
+    }
+    return (int16_t)(a >> (-sh));
+}
+
+static inline int32_t sat_shl_s32(int32_t a, int32_t sh, int *sat) {
+    if (sh >= 0) {
+        if (sh >= 31) { *sat = 1; return (a < 0) ? INT32_MIN : INT32_MAX; }
+        int64_t tmp = (int64_t)a << sh;
+        if (tmp > INT32_MAX) { *sat = 1; return INT32_MAX; }
+        if (tmp < INT32_MIN) { *sat = 1; return INT32_MIN; }
+        return (int32_t)tmp;
+    }
+    return a >> (-sh);
+}
+
+static inline int64_t sat_shl_s64(int64_t a, int64_t sh, int *sat) {
+    if (sh >= 0) {
+        if (sh >= 63) { *sat = 1; return (a < 0) ? INT64_MIN : INT64_MAX; }
+        if ((sh > 0) && ((a >  (INT64_MAX >> sh)) || (a < (INT64_MIN >> sh)))) {
+            *sat = 1;
+            return (a < 0) ? INT64_MIN : INT64_MAX;
+        }
+        return a << sh;
+    }
+    return a >> (-sh);
+}
+
+/*===================  Unsigned QSHL  (UQSHL)  ====================*/
+static inline uint8_t  sat_shl_u8 (uint8_t a, int8_t sh, int *sat) {
+    if (sh >= 0) {
+        if (sh >= 8) { *sat = 1; return UINT8_MAX; }
+        uint16_t tmp = (uint16_t)a << sh;
+        if (tmp > UINT8_MAX) { *sat = 1; return UINT8_MAX; }
+        return (uint8_t)tmp;
+    }
+    return a >> (-sh);
+}
+
+static inline uint16_t sat_shl_u16(uint16_t a, int16_t sh, int *sat) {
+    if (sh >= 0) {
+        if (sh >= 16) { *sat = 1; return UINT16_MAX; }
+        uint32_t tmp = (uint32_t)a << sh;
+        if (tmp > UINT16_MAX) { *sat = 1; return UINT16_MAX; }
+        return (uint16_t)tmp;
+    }
+    return a >> (-sh);
+}
+
+static inline uint32_t sat_shl_u32(uint32_t a, int32_t sh, int *sat) {
+    if (sh >= 0) {
+        if (sh >= 32) { *sat = 1; return UINT32_MAX; }
+        uint64_t tmp = (uint64_t)a << sh;
+        if (tmp > UINT32_MAX) { *sat = 1; return UINT32_MAX; }
+        return (uint32_t)tmp;
+    }
+    return a >> (-sh);
+}
+
+static inline uint64_t sat_shl_u64(uint64_t a, int64_t sh, int *sat) {
+    if (sh >= 0) {
+        if (sh >= 64) { *sat = 1; return UINT64_MAX; }
+        if ((sh > 0) && (a > (UINT64_MAX >> sh))) { *sat = 1; return UINT64_MAX; }
+        return a << sh;
+    }
+    return a >> (-sh);
 }
 
 
@@ -860,5 +948,152 @@ static inline void uqsub_dform(a64rf_state_t *s,
     }
 
     write_all_d_vreg(s, Vd, r);
+    if (qc) s->fpsr.QC = 1;
+}
+
+
+/*===========================  SQSHL  ============================*/
+static inline void sqshl_bform(a64rf_state_t *s,
+                               const a64rf_vreg_idx_t Vd,
+                               const a64rf_vreg_idx_t Vn,
+                               const a64rf_vreg_idx_t Vm)
+{
+    uint8_t val[VREG_B_LANE_COUNT], sh[VREG_B_LANE_COUNT], res[VREG_B_LANE_COUNT];
+    int qc = 0;
+    read_all_b_vreg(s, Vn, val);
+    read_all_b_vreg(s, Vm, sh);
+    for (size_t i = 0; i < VREG_B_LANE_COUNT; ++i) {
+        int sat = 0;
+        res[i] = (uint8_t)sat_shl_s8((int8_t)val[i], (int8_t)sh[i], &sat);
+        qc |= sat;
+    }
+    write_all_b_vreg(s, Vd, res);
+    if (qc) s->fpsr.QC = 1;
+}
+
+static inline void sqshl_hform(a64rf_state_t *s,
+                               const a64rf_vreg_idx_t Vd,
+                               const a64rf_vreg_idx_t Vn,
+                               const a64rf_vreg_idx_t Vm)
+{
+    uint16_t val[VREG_H_LANE_COUNT], sh[VREG_H_LANE_COUNT], res[VREG_H_LANE_COUNT];
+    int qc = 0;
+    read_all_h_vreg(s, Vn, val);
+    read_all_h_vreg(s, Vm, sh);
+    for (size_t i = 0; i < VREG_H_LANE_COUNT; ++i) {
+        int sat = 0;
+        res[i] = (uint16_t)sat_shl_s16((int16_t)val[i], (int16_t)sh[i], &sat);
+        qc |= sat;
+    }
+    write_all_h_vreg(s, Vd, res);
+    if (qc) s->fpsr.QC = 1;
+}
+
+static inline void sqshl_sform(a64rf_state_t *s,
+                               const a64rf_vreg_idx_t Vd,
+                               const a64rf_vreg_idx_t Vn,
+                               const a64rf_vreg_idx_t Vm)
+{
+    uint32_t val[VREG_S_LANE_COUNT], sh[VREG_S_LANE_COUNT], res[VREG_S_LANE_COUNT];
+    int qc = 0;
+    read_all_s_vreg(s, Vn, val);
+    read_all_s_vreg(s, Vm, sh);
+    for (size_t i = 0; i < VREG_S_LANE_COUNT; ++i) {
+        int sat = 0;
+        res[i] = (uint32_t)sat_shl_s32((int32_t)val[i], (int32_t)sh[i], &sat);
+        qc |= sat;
+    }
+    write_all_s_vreg(s, Vd, res);
+    if (qc) s->fpsr.QC = 1;
+}
+
+static inline void sqshl_dform(a64rf_state_t *s,
+                               const a64rf_vreg_idx_t Vd,
+                               const a64rf_vreg_idx_t Vn,
+                               const a64rf_vreg_idx_t Vm)
+{
+    uint64_t val[VREG_D_LANE_COUNT], sh[VREG_D_LANE_COUNT], res[VREG_D_LANE_COUNT];
+    int qc = 0;
+    read_all_d_vreg(s, Vn, val);
+    read_all_d_vreg(s, Vm, sh);
+    for (size_t i = 0; i < VREG_D_LANE_COUNT; ++i) {
+        int sat = 0;
+        res[i] = sat_shl_s64((int64_t)val[i], (int64_t)sh[i], &sat);
+        qc |= sat;
+    }
+    write_all_d_vreg(s, Vd, res);
+    if (qc) s->fpsr.QC = 1;
+}
+
+/*===========================  UQSHL  ============================*/
+static inline void uqshl_bform(a64rf_state_t *s,
+                               const a64rf_vreg_idx_t Vd,
+                               const a64rf_vreg_idx_t Vn,
+                               const a64rf_vreg_idx_t Vm)
+{
+    uint8_t val[VREG_B_LANE_COUNT], sh[VREG_B_LANE_COUNT], res[VREG_B_LANE_COUNT];
+    int qc = 0;
+    read_all_b_vreg(s, Vn, val);
+    read_all_b_vreg(s, Vm, sh);
+    for (size_t i = 0; i < VREG_B_LANE_COUNT; ++i) {
+        int sat = 0;
+        res[i] = sat_shl_u8(val[i], (int8_t)sh[i], &sat);
+        qc |= sat;
+    }
+    write_all_b_vreg(s, Vd, res);
+    if (qc) s->fpsr.QC = 1;
+}
+
+static inline void uqshl_hform(a64rf_state_t *s,
+                               const a64rf_vreg_idx_t Vd,
+                               const a64rf_vreg_idx_t Vn,
+                               const a64rf_vreg_idx_t Vm)
+{
+    uint16_t val[VREG_H_LANE_COUNT], sh[VREG_H_LANE_COUNT], res[VREG_H_LANE_COUNT];
+    int qc = 0;
+    read_all_h_vreg(s, Vn, val);
+    read_all_h_vreg(s, Vm, sh);
+    for (size_t i = 0; i < VREG_H_LANE_COUNT; ++i) {
+        int sat = 0;
+        res[i] = sat_shl_u16(val[i], (int16_t)sh[i], &sat);
+        qc |= sat;
+    }
+    write_all_h_vreg(s, Vd, res);
+    if (qc) s->fpsr.QC = 1;
+}
+
+static inline void uqshl_sform(a64rf_state_t *s,
+                               const a64rf_vreg_idx_t Vd,
+                               const a64rf_vreg_idx_t Vn,
+                               const a64rf_vreg_idx_t Vm)
+{
+    uint32_t val[VREG_S_LANE_COUNT], sh[VREG_S_LANE_COUNT], res[VREG_S_LANE_COUNT];
+    int qc = 0;
+    read_all_s_vreg(s, Vn, val);
+    read_all_s_vreg(s, Vm, sh);
+    for (size_t i = 0; i < VREG_S_LANE_COUNT; ++i) {
+        int sat = 0;
+        res[i] = sat_shl_u32(val[i], (int32_t)sh[i], &sat);
+        qc |= sat;
+    }
+    write_all_s_vreg(s, Vd, res);
+    if (qc) s->fpsr.QC = 1;
+}
+
+static inline void uqshl_dform(a64rf_state_t *s,
+                               const a64rf_vreg_idx_t Vd,
+                               const a64rf_vreg_idx_t Vn,
+                               const a64rf_vreg_idx_t Vm)
+{
+    uint64_t val[VREG_D_LANE_COUNT], sh[VREG_D_LANE_COUNT], res[VREG_D_LANE_COUNT];
+    int qc = 0;
+    read_all_d_vreg(s, Vn, val);
+    read_all_d_vreg(s, Vm, sh);
+    for (size_t i = 0; i < VREG_D_LANE_COUNT; ++i) {
+        int sat = 0;
+        res[i] = sat_shl_u64(val[i], (int64_t)sh[i], &sat);
+        qc |= sat;
+    }
+    write_all_d_vreg(s, Vd, res);
     if (qc) s->fpsr.QC = 1;
 }

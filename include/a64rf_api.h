@@ -112,9 +112,9 @@ static inline uint64_t read_d_vreg_hi(const a64rf_state_t* state, a64rf_vreg_idx
 }
 
 
-static inline void read_all_d_vreg(uint64_t dest[static VREG_D_LANE_COUNT],
-                                   const a64rf_state_t *state,
-                                   a64rf_vreg_idx_t vreg_idx)
+static inline void read_all_d_vreg(const a64rf_state_t *state,
+                                   a64rf_vreg_idx_t vreg_idx,
+                                   uint64_t dest[static VREG_D_LANE_COUNT])
 {
     if (vreg_idx >= VREG_COUNT) {
         fprintf(stderr, "Invalid vreg index %d\n", (int)vreg_idx);
@@ -144,9 +144,9 @@ static inline uint32_t read_s_vreg(const a64rf_state_t* state, a64rf_vreg_idx_t 
     return state->vreg[vreg_idx].s[lane];
 }
 
-static inline void read_all_s_vreg(uint32_t dest[static VREG_S_LANE_COUNT],
-                                   const a64rf_state_t *state,
-                                   a64rf_vreg_idx_t vreg_idx)
+static inline void read_all_s_vreg(const a64rf_state_t *state,
+                                   a64rf_vreg_idx_t vreg_idx,
+                                   uint32_t dest[static VREG_S_LANE_COUNT])
 {
     if (vreg_idx >= VREG_COUNT) {
         fprintf(stderr, "Invalid vreg index %d\n", (int)vreg_idx);
@@ -177,9 +177,10 @@ static inline uint16_t read_h_vreg(const a64rf_state_t* state, a64rf_vreg_idx_t 
     }
     return state->vreg[vreg_idx].h[lane];
 }
-static inline void read_all_h_vreg(uint16_t dest[static VREG_H_LANE_COUNT],
-                                   const a64rf_state_t *state,
-                                   a64rf_vreg_idx_t vreg_idx)
+
+static inline void read_all_h_vreg(const a64rf_state_t *state,
+                                   a64rf_vreg_idx_t vreg_idx,
+                                   uint16_t dest[static VREG_H_LANE_COUNT])
 {
     if (vreg_idx >= VREG_COUNT) {
         fprintf(stderr, "Invalid vreg index %d\n", (int)vreg_idx);
@@ -210,9 +211,9 @@ static inline uint8_t read_b_vreg(const a64rf_state_t* state, const a64rf_vreg_i
     return state->vreg[vreg_idx].b[lane];
 }
 
-static inline void read_all_b_vreg(uint8_t dest[static VREG_B_LANE_COUNT],
-                                   const a64rf_state_t *state,
-                                   a64rf_vreg_idx_t vreg_idx)
+static inline void read_all_b_vreg(const a64rf_state_t *state,
+                                   a64rf_vreg_idx_t vreg_idx,
+                                   uint8_t dest[static VREG_B_LANE_COUNT])
 {
     if (vreg_idx >= VREG_COUNT) {
         fprintf(stderr, "Invalid vreg index %d\n", (int)vreg_idx);
@@ -290,13 +291,43 @@ write_d_vreg(a64rf_state_t *state, a64rf_vreg_idx_t vreg_idx,
         fprintf(stderr, "Invalid vreg index %d\n", (int)vreg_idx);
         return;
     }
-    if (lane > 1) {
+    if (lane >= VREG_D_LANE_COUNT) {
         fprintf(stderr, "Invalid lane index %zu for vreg d[]\n", lane);
         return;
     }
     state->vreg[vreg_idx].d[lane] = val;
 
 }
+
+
+/*
+ * Write the two 64-bit lanes (d-view) of a vector register in one shot.
+ *
+ * \param src       Pointer to an array holding exactly VREG_D_LANE_COUNT
+ *                  64-bit values (low lane first, high lane second).
+ * \param state     Pointer to the CPU state structure.
+ * \param vreg_idx  Index of the destination vector register.
+ *
+ * On parameter error the routine prints a diagnostic to stderr and returns
+ * without modifying any register state.
+ */
+static inline void
+write_all_d_vreg(a64rf_state_t      *state,
+                 a64rf_vreg_idx_t    vreg_idx,
+                 const uint64_t src[static VREG_D_LANE_COUNT])
+{
+    if (vreg_idx >= VREG_COUNT) {
+        fprintf(stderr, "Invalid vreg index %d\n", (int)vreg_idx);
+        return;
+    }
+
+    /* 128-bit copy: faster than two scalar stores, keeps code short. */
+    memcpy(state->vreg[vreg_idx].d,
+           src,
+           sizeof(state->vreg[vreg_idx].d));      /* 2 × 64-bit = 16 bytes */
+}
+
+
 
 /* Helper to write the low 64 bits of a vector register. */
 static inline void
@@ -318,12 +349,30 @@ write_s_vreg(a64rf_state_t *state, a64rf_vreg_idx_t vreg_idx,
         fprintf(stderr, "Invalid vreg index %d\n", (int)vreg_idx);
         return;
     }
-    if (lane > 3) {
+    if (lane >= VREG_S_LANE_COUNT) {
         fprintf(stderr, "Invalid lane index %zu for vreg s[]\n", lane);
         return;
     }
     state->vreg[vreg_idx].s[lane] = val;
 }
+
+
+static inline void
+write_all_s_vreg(a64rf_state_t      *state,
+                 a64rf_vreg_idx_t    vreg_idx,
+                 const uint32_t src[static VREG_S_LANE_COUNT])
+{
+    if (vreg_idx >= VREG_COUNT) {
+        fprintf(stderr, "Invalid vreg index %d\n", (int)vreg_idx);
+        return;
+    }
+
+    /* 128-bit copy: faster than two scalar stores, keeps code short. */
+    memcpy(state->vreg[vreg_idx].s,
+           src,
+           sizeof(state->vreg[vreg_idx].s));      /* 2 × 64-bit = 16 bytes */
+}
+
 
 /* ───────────── V.h (8×16) ───────────── */
 static inline void
@@ -334,12 +383,29 @@ write_h_vreg(a64rf_state_t *state, a64rf_vreg_idx_t vreg_idx,
         fprintf(stderr, "Invalid vreg index %d\n", (int)vreg_idx);
         return;
     }
-    if (lane > 7) {
+    if (lane >= VREG_H_LANE_COUNT) {
         fprintf(stderr, "Invalid lane index %zu for vreg h[]\n", lane);
         return;
     }
     state->vreg[vreg_idx].h[lane] = val;
 }
+
+static inline void
+write_all_h_vreg(a64rf_state_t      *state,
+                 a64rf_vreg_idx_t    vreg_idx,
+                 const uint16_t src[static VREG_H_LANE_COUNT])
+{
+    if (vreg_idx >= VREG_COUNT) {
+        fprintf(stderr, "Invalid vreg index %d\n", (int)vreg_idx);
+        return;
+    }
+
+    /* 128-bit copy: faster than two scalar stores, keeps code short. */
+    memcpy(state->vreg[vreg_idx].h,
+           src,
+           sizeof(state->vreg[vreg_idx].h));      /* 2 × 64-bit = 16 bytes */
+}
+
 
 /* ───────────── V.b (16×8) ───────────── */
 static inline void
@@ -350,11 +416,27 @@ write_b_vreg(a64rf_state_t *state, a64rf_vreg_idx_t vreg_idx,
         fprintf(stderr, "Invalid vreg index %d\n", (int)vreg_idx);
         return;
     }
-    if (lane > 15) {
+    if (lane >= VREG_B_LANE_COUNT) {
         fprintf(stderr, "Invalid lane index %zu for vreg b[]\n", lane);
         return;
     }
     state->vreg[vreg_idx].b[lane] = val;
+}
+
+static inline void
+write_all_b_vreg(a64rf_state_t      *state,
+                 a64rf_vreg_idx_t    vreg_idx,
+                 const uint8_t src[static VREG_B_LANE_COUNT])
+{
+    if (vreg_idx >= VREG_COUNT) {
+        fprintf(stderr, "Invalid vreg index %d\n", (int)vreg_idx);
+        return;
+    }
+
+    /* 128-bit copy: faster than two scalar stores, keeps code short. */
+    memcpy(state->vreg[vreg_idx].b,
+           src,
+           sizeof(state->vreg[vreg_idx].b));      /* 2 × 64-bit = 16 bytes */
 }
 
 /* ───────────── 寫整個 V 向量 (128-bit) ─────────────

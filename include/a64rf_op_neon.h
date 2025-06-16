@@ -8,11 +8,19 @@ static inline void add_bform(a64rf_state_t *s,
                              const a64rf_vreg_idx_t Vn,
                              const a64rf_vreg_idx_t Vm)
 {
-    uint8_t       *dst = s->vreg[Vd].b;
-    const uint8_t *a   = s->vreg[Vn].b;
-    const uint8_t *b   = s->vreg[Vm].b;
-    for (size_t i = 0; i < 16; ++i)
-        dst[i] = (uint8_t)(a[i] + b[i]);
+    uint8_t a[VREG_B_LANE_COUNT];
+    uint8_t b[VREG_B_LANE_COUNT];
+    uint8_t r[VREG_B_LANE_COUNT];
+
+    read_all_b_vreg(s, Vn, a);
+    read_all_b_vreg(s, Vm, b);
+    
+    for (size_t i = 0; i < VREG_B_LANE_COUNT; ++i)
+    {
+        r[i] = (uint8_t)(a[i] + b[i]);
+    }
+
+    write_all_d_vreg(s, Vd, r);
 }
 
 
@@ -21,12 +29,21 @@ static inline void add_hform(a64rf_state_t *s,
                              const a64rf_vreg_idx_t Vn,
                              const a64rf_vreg_idx_t Vm)
 {
-    uint16_t       *dst = s->vreg[Vd].h;
-    const uint16_t *a   = s->vreg[Vn].h;
-    const uint16_t *b   = s->vreg[Vm].h;
-    for (size_t i = 0; i < 8; ++i)
-        dst[i] = (uint16_t)(a[i] + b[i]);
+    uint16_t a[VREG_H_LANE_COUNT];
+    uint16_t b[VREG_H_LANE_COUNT];
+    uint16_t r[VREG_H_LANE_COUNT];
+
+    read_all_b_vreg(s, Vn, a);
+    read_all_b_vreg(s, Vm, b);
+    
+    for (size_t i = 0; i < VREG_H_LANE_COUNT; ++i)
+    {
+        r[i] = (uint16_t)(a[i] + b[i]);
+    }
+
+    write_all_d_vreg(s, Vd, r);
 }
+
 
 
 static inline void add_sform(a64rf_state_t *s,
@@ -34,11 +51,17 @@ static inline void add_sform(a64rf_state_t *s,
                              const a64rf_vreg_idx_t Vn,
                              const a64rf_vreg_idx_t Vm)
 {
-    uint32_t       *dst = s->vreg[Vd].s;
-    const uint32_t *a   = s->vreg[Vn].s;
-    const uint32_t *b   = s->vreg[Vm].s;
-    for (size_t i = 0; i < 4; ++i)
-        dst[i] = a[i] + b[i];
+    uint32_t a[VREG_S_LANE_COUNT];
+    uint32_t b[VREG_S_LANE_COUNT];
+    uint32_t r[VREG_S_LANE_COUNT];
+
+    read_all_b_vreg(s, Vn, a);
+    read_all_b_vreg(s, Vm, b);
+
+    for (size_t i = 0; i < VREG_S_LANE_COUNT; ++i)
+        r[i] = (uint32_t)(a[i] + b[i]);
+
+    write_all_s_vreg(s, Vd, r);
 }
 
 static inline void add_dform(a64rf_state_t *s,
@@ -46,11 +69,17 @@ static inline void add_dform(a64rf_state_t *s,
                              const a64rf_vreg_idx_t Vn,
                              const a64rf_vreg_idx_t Vm)
 {
-    uint64_t       *dst = s->vreg[Vd].d;
-    const uint64_t *a   = s->vreg[Vn].d;
-    const uint64_t *b   = s->vreg[Vm].d;
-    dst[0] = a[0] + b[0];
-    dst[1] = a[1] + b[1];
+    uint64_t a[VREG_D_LANE_COUNT];
+    uint64_t b[VREG_D_LANE_COUNT];
+    uint64_t r[VREG_D_LANE_COUNT];
+
+    read_all_b_vreg(s, Vn, a);
+    read_all_b_vreg(s, Vm, b);
+
+    for (size_t i = 0; i < VREG_D_LANE_COUNT; ++i)
+        r[i] = (uint64_t)(a[i] + b[i]);
+
+    write_all_d_vreg(s, Vd, r);
 }
 
 static inline void sub_bform(a64rf_state_t *s,
@@ -58,11 +87,19 @@ static inline void sub_bform(a64rf_state_t *s,
                              const a64rf_vreg_idx_t Vn,
                              const a64rf_vreg_idx_t Vm)
 {
-    uint8_t       *dst = s->vreg[Vd].b;
-    const uint8_t *a   = s->vreg[Vn].b;
-    const uint8_t *b   = s->vreg[Vm].b;
-    for (size_t i = 0; i < 16; ++i)
-        dst[i] = (uint8_t)(a[i] - b[i]);
+    uint8_t a[VREG_B_LANE_COUNT];
+    uint8_t b[VREG_B_LANE_COUNT];
+    uint8_t r[VREG_B_LANE_COUNT];
+
+    read_all_b_vreg(s, Vn, a);
+    read_all_b_vreg(s, Vm, b);
+    
+    for (size_t i = 0; i < VREG_B_LANE_COUNT; ++i)
+    {
+        r[i] = (uint8_t)(a[i] - b[i]);
+    }
+
+    write_all_b_vreg(s, Vd, r);
 }
 
 
@@ -71,11 +108,17 @@ static inline void sub_hform(a64rf_state_t *s,
                              const a64rf_vreg_idx_t Vn,
                              const a64rf_vreg_idx_t Vm)
 {
-    uint16_t       *dst = s->vreg[Vd].h;
-    const uint16_t *a   = s->vreg[Vn].h;
-    const uint16_t *b   = s->vreg[Vm].h;
-    for (size_t i = 0; i < 8; ++i)
-        dst[i] = (uint16_t)(a[i] - b[i]);
+    uint16_t a[VREG_H_LANE_COUNT];
+    uint16_t b[VREG_H_LANE_COUNT];
+    uint16_t r[VREG_H_LANE_COUNT];
+
+    read_all_b_vreg(s, Vn, a);
+    read_all_b_vreg(s, Vm, b);
+
+    for (size_t i = 0; i < VREG_H_LANE_COUNT; ++i)
+        r[i] = (uint16_t)(a[i] - b[i]);
+
+    write_all_h_vreg(s, Vd, r);
 }
 
 
@@ -84,11 +127,17 @@ static inline void sub_sform(a64rf_state_t *s,
                              const a64rf_vreg_idx_t Vn,
                              const a64rf_vreg_idx_t Vm)
 {
-    uint32_t       *dst = s->vreg[Vd].s;
-    const uint32_t *a   = s->vreg[Vn].s;
-    const uint32_t *b   = s->vreg[Vm].s;
-    for (size_t i = 0; i < 4; ++i)
-        dst[i] = a[i] - b[i];
+    uint32_t a[VREG_S_LANE_COUNT];
+    uint32_t b[VREG_S_LANE_COUNT];
+    uint32_t r[VREG_S_LANE_COUNT];
+
+    read_all_b_vreg(s, Vn, a);
+    read_all_b_vreg(s, Vm, b);
+
+    for (size_t i = 0; i < VREG_S_LANE_COUNT; ++i)
+        r[i] = (uint32_t)(a[i] - b[i]);
+
+    write_all_d_vreg(s, Vd, r);
 }
 
 
@@ -97,11 +146,17 @@ static inline void sub_dform(a64rf_state_t *s,
                              const a64rf_vreg_idx_t Vn,
                              const a64rf_vreg_idx_t Vm)
 {
-    uint64_t       *dst = s->vreg[Vd].d;
-    const uint64_t *a   = s->vreg[Vn].d;
-    const uint64_t *b   = s->vreg[Vm].d;
-    dst[0] = a[0] - b[0];
-    dst[1] = a[1] - b[1];
+    uint64_t a[VREG_D_LANE_COUNT];
+    uint64_t b[VREG_D_LANE_COUNT];
+    uint64_t r[VREG_D_LANE_COUNT];
+
+    read_all_b_vreg(s, Vn, a);
+    read_all_b_vreg(s, Vm, b);
+
+    for (size_t i = 0; i < VREG_D_LANE_COUNT; ++i)
+        r[i] = (uint64_t)(a[i] - b[i]);
+
+    write_all_d_vreg(s, Vd, r);
 }
 
 
@@ -110,11 +165,19 @@ static inline void mul_bform(a64rf_state_t *s,
                              const a64rf_vreg_idx_t Vn,
                              const a64rf_vreg_idx_t Vm)
 {
-    uint8_t       *dst = s->vreg[Vd].b;
-    const uint8_t *a   = s->vreg[Vn].b;
-    const uint8_t *b   = s->vreg[Vm].b;
-    for (size_t i = 0; i < 16; ++i)
-        dst[i] = (uint8_t)(a[i] * b[i]);
+    uint8_t a[VREG_B_LANE_COUNT];
+    uint8_t b[VREG_B_LANE_COUNT];
+    uint8_t r[VREG_B_LANE_COUNT];
+
+    read_all_b_vreg(s, Vn, a);
+    read_all_b_vreg(s, Vm, b);
+    
+    for (size_t i = 0; i < VREG_B_LANE_COUNT; ++i)
+    {
+        r[i] = (uint8_t)(a[i] * b[i]);
+    }
+
+    write_all_d_vreg(s, Vd, r);
 }
 
 
@@ -123,11 +186,17 @@ static inline void mul_hform(a64rf_state_t *s,
                              const a64rf_vreg_idx_t Vn,
                              const a64rf_vreg_idx_t Vm)
 {
-    uint16_t       *dst = s->vreg[Vd].h;
-    const uint16_t *a   = s->vreg[Vn].h;
-    const uint16_t *b   = s->vreg[Vm].h;
-    for (size_t i = 0; i < 8; ++i)
-        dst[i] = (uint16_t)(a[i] * b[i]);
+    uint16_t a[VREG_H_LANE_COUNT];
+    uint16_t b[VREG_H_LANE_COUNT];
+    uint16_t r[VREG_H_LANE_COUNT];
+
+    read_all_b_vreg(s, Vn, a);
+    read_all_b_vreg(s, Vm, b);
+
+    for (size_t i = 0; i < VREG_H_LANE_COUNT; ++i)
+        r[i] = (uint16_t)(a[i] * b[i]);
+
+    write_all_h_vreg(s, Vd, r);
 }
 
 
@@ -136,11 +205,17 @@ static inline void mul_sform(a64rf_state_t *s,
                              const a64rf_vreg_idx_t Vn,
                              const a64rf_vreg_idx_t Vm)
 {
-    uint32_t       *dst = s->vreg[Vd].s;
-    const uint32_t *a   = s->vreg[Vn].s;
-    const uint32_t *b   = s->vreg[Vm].s;
-    for (size_t i = 0; i < 4; ++i)
-        dst[i] = a[i] * b[i];
+    uint32_t a[VREG_S_LANE_COUNT];
+    uint32_t b[VREG_S_LANE_COUNT];
+    uint32_t r[VREG_S_LANE_COUNT];
+
+    read_all_b_vreg(s, Vn, a);
+    read_all_b_vreg(s, Vm, b);
+
+    for (size_t i = 0; i < VREG_S_LANE_COUNT; ++i)
+        r[i] = (uint32_t)(a[i] * b[i]);
+
+    write_all_d_vreg(s, Vd, r);
 }
 
 
@@ -149,9 +224,15 @@ static inline void mul_dform(a64rf_state_t *s,
                              const a64rf_vreg_idx_t Vn,
                              const a64rf_vreg_idx_t Vm)
 {
-    uint64_t       *dst = s->vreg[Vd].d;
-    const uint64_t *a   = s->vreg[Vn].d;
-    const uint64_t *b   = s->vreg[Vm].d;
-    dst[0] = a[0] * b[0];
-    dst[1] = a[1] * b[1];
+    uint64_t a[VREG_D_LANE_COUNT];
+    uint64_t b[VREG_D_LANE_COUNT];
+    uint64_t r[VREG_D_LANE_COUNT];
+
+    read_all_b_vreg(s, Vn, a);
+    read_all_b_vreg(s, Vm, b);
+
+    for (size_t i = 0; i < VREG_D_LANE_COUNT; ++i)
+        r[i] = (uint64_t)(a[i] * b[i]);
+
+    write_all_d_vreg(s, Vd, r);
 }

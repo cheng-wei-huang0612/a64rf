@@ -118,14 +118,17 @@ typedef union {
 
 
 
-#define MEMORY_SIZE 256
+#define STACK_SIZE (16 * 1024) // 1kB ?
+#define MEMORY_SIZE (16 * 1024)
 
 
 
 typedef struct {
     gpr_t    gpr[GPR_COUNT];
     vreg_t   vreg[VREG_COUNT];
-    uint64_t stack[MEMORY_SIZE];
+
+    uint8_t  stack[STACK_SIZE];
+    uint8_t  memory[MEMORY_SIZE];
 
     nzcv_t   nzcv;   /* PSTATE.NZCV               */
     fpsr_t   fpsr;   /* FPSR.QC (飽和累積旗標)     */

@@ -17,16 +17,28 @@ extern "C" {
 #endif
 
 /* --------------------------------------------------------------------------
- * Core type definitions & public API helpers
+ * Core type definitions 
  * -------------------------------------------------------------------------- */
-#include "a64rf_types.h"   /* basic enums & structures (state, regs, flags)   */
-#include "a64rf_api.h"     /* state creation / destruction & misc. utilities  */
+#include "types.h"   /* basic enums & structures (state, regs, flags)   */
+
+
+/* --------------------------------------------------------------------------
+ * API 
+ * -------------------------------------------------------------------------- */
+#include "a64rf/api/gpr.h"
+#include "a64rf/api/nzcv_flag.h"
+#include "a64rf/api/vreg/read.h"
+#include "a64rf/api/vreg/print.h"
+#include "a64rf/api/vreg/write.h"
+
+
+
 
 /* --------------------------------------------------------------------------
  * Operation helpers
  * -------------------------------------------------------------------------- */
-#include "a64rf_op_gpr.h"  /* scalar A64 instructions operating on GPRs       */
-#include "a64rf_op_neon.h" /* SIMD / NEON instructions                        */
+#include "a64rf/op/a64rf_op_gpr.h"  /* scalar A64 instructions operating on GPRs       */
+#include "a64rf/op/a64rf_op_neon.h" /* SIMD / NEON instructions                        */
 
 
 

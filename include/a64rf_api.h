@@ -27,8 +27,7 @@ static inline uint64_t read_val_gpr(const a64rf_state_t* state, a64rf_gpr_idx_t 
         fprintf(stderr, "Invalid GPR index %d\n", (int)gpr_idx);
         return 0;
     }
-
-    return state->gpr[gpr_idx].val;
+    return (gpr_idx == XZR) ? 0 : state->gpr[gpr_idx].val;
 }
 
 
@@ -95,7 +94,7 @@ static inline uint64_t read_d_vreg(const a64rf_state_t* state, a64rf_vreg_idx_t 
         fprintf(stderr, "Invalid vreg index %d\n", (int)vreg_idx);
         return 0;
     }
-    if (lane > 1) {
+    if (lane >= VREG_D_LANE_COUNT) {
         // Handle error: invalid lane index
         fprintf(stderr, "Invalid lane index %zu for vreg d[]\n", lane);
         return 0;
@@ -112,6 +111,19 @@ static inline uint64_t read_d_vreg_hi(const a64rf_state_t* state, a64rf_vreg_idx
     return read_d_vreg(state, vreg_idx, 1);
 }
 
+
+static inline void read_all_d_vreg(uint64_t dest[static VREG_D_LANE_COUNT],
+                                   const a64rf_state_t *state,
+                                   a64rf_vreg_idx_t vreg_idx)
+{
+    if (vreg_idx >= VREG_COUNT) {
+        fprintf(stderr, "Invalid vreg index %d\n", (int)vreg_idx);
+        return;
+    }
+    memcpy(dest, state->vreg[vreg_idx].d, sizeof(state->vreg[vreg_idx].d));
+}
+
+
 /*
  * Read a 32-bit lane from the s[] view of a vector register.
  *
@@ -124,13 +136,27 @@ static inline uint32_t read_s_vreg(const a64rf_state_t* state, a64rf_vreg_idx_t 
         fprintf(stderr, "Invalid vreg index %d\n", (int)vreg_idx);
         return 0;
     }
-    if (lane > 3) {
+    if (lane >= VREG_S_LANE_COUNT) {
         // Handle error: invalid lane index
         fprintf(stderr, "Invalid lane index %zu for vreg s[]\n", lane);
         return 0;
     }
     return state->vreg[vreg_idx].s[lane];
 }
+
+static inline void read_all_s_vreg(uint32_t dest[static VREG_S_LANE_COUNT],
+                                   const a64rf_state_t *state,
+                                   a64rf_vreg_idx_t vreg_idx)
+{
+    if (vreg_idx >= VREG_COUNT) {
+        fprintf(stderr, "Invalid vreg index %d\n", (int)vreg_idx);
+        return;
+    }
+    memcpy(dest, state->vreg[vreg_idx].s, sizeof(state->vreg[vreg_idx].s));
+}
+
+
+
 
 /*
  * Read a 16-bit lane from the h[] view of a vector register.
@@ -144,13 +170,25 @@ static inline uint16_t read_h_vreg(const a64rf_state_t* state, a64rf_vreg_idx_t 
         fprintf(stderr, "Invalid vreg index %d\n", (int)vreg_idx);
         return 0;
     }
-    if (lane > 7) {
+    if (lane >= VREG_H_LANE_COUNT) {
         // Handle error: invalid lane index
         fprintf(stderr, "Invalid lane index %zu for vreg h[]\n", lane);
         return 0;
     }
     return state->vreg[vreg_idx].h[lane];
 }
+static inline void read_all_h_vreg(uint16_t dest[static VREG_H_LANE_COUNT],
+                                   const a64rf_state_t *state,
+                                   a64rf_vreg_idx_t vreg_idx)
+{
+    if (vreg_idx >= VREG_COUNT) {
+        fprintf(stderr, "Invalid vreg index %d\n", (int)vreg_idx);
+        return;
+    }
+    memcpy(dest, state->vreg[vreg_idx].h, sizeof(state->vreg[vreg_idx].h));
+}
+
+
 
 /*
  * Read an 8-bit lane from the b[] view of a vector register.
@@ -159,18 +197,30 @@ static inline uint16_t read_h_vreg(const a64rf_state_t* state, a64rf_vreg_idx_t 
  * \param vreg_idx  Vector register index.
  * \param lane      Lane number (0-15).
  */
-static inline uint8_t read_b_vreg(const a64rf_state_t* state, a64rf_vreg_idx_t vreg_idx, size_t lane) {
+static inline uint8_t read_b_vreg(const a64rf_state_t* state, const a64rf_vreg_idx_t vreg_idx, size_t lane) {
     if (vreg_idx >= VREG_COUNT) {
         fprintf(stderr, "Invalid vreg index %d\n", (int)vreg_idx);
         return 0;
     }
-    if (lane > 15) {
+    if (lane >= VREG_B_LANE_COUNT) {
         // Handle error: invalid lane index
         fprintf(stderr, "Invalid lane index %zu for vreg b[]\n", lane);
         return 0;
     }
     return state->vreg[vreg_idx].b[lane];
 }
+
+static inline void read_all_b_vreg(uint8_t dest[static VREG_B_LANE_COUNT],
+                                   const a64rf_state_t *state,
+                                   a64rf_vreg_idx_t vreg_idx)
+{
+    if (vreg_idx >= VREG_COUNT) {
+        fprintf(stderr, "Invalid vreg index %d\n", (int)vreg_idx);
+        return;
+    }
+    memcpy(dest, state->vreg[vreg_idx].b, sizeof(state->vreg[vreg_idx].b));
+}
+
 
 /*
  * Print the contents of a vector register as two 64-bit values.
@@ -224,7 +274,10 @@ static inline void write_val_gpr(a64rf_state_t *state, a64rf_gpr_idx_t gpr_idx, 
         fprintf(stderr, "Invalid GPR index %d\n", (int)gpr_idx);
         return;
     }
-    state->gpr[gpr_idx].val = val;
+
+    /* Ignore writes to XZR/WZR */
+    if (gpr_idx != XZR)
+        state->gpr[gpr_idx].val = val;
 }
 /*
  * Write a 64-bit lane in the d[] view of a vector register.

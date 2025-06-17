@@ -12,8 +12,8 @@ int main(void)
     printf("%d\n\n",program.insts[1].op);
 
 
-    program.insts[3].op = OP_RET;
-    program.insts[3].target_pc.val = (uint16_t)-1;
+    program.insts[10].op = OP_RET;
+    program.insts[10].target_pc.val = (uint16_t)-1;
 
 
     printf("%d\n\n",program.insts[1].op);

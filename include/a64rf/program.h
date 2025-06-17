@@ -26,7 +26,7 @@ pc_t increment_pc(pc_t old_pc)
     return new_pc;
 }
 
-void run_instruction_on_state(a64rf_instruction_t *instruction, a64rf_state_t *state)
+void run_instruction_on_state(const a64rf_instruction_t *instruction, a64rf_state_t *state)
 {
     if (instruction->op == OP_NULL) {
         state->pc.val += 1;
@@ -49,11 +49,9 @@ void run_program_on_state(a64rf_program_t *program, a64rf_state_t *state)
     // we should get the respective pc for each label first.
 
 
-    a64rf_instruction_t current_instruction;
-    for (size_t i = 0; i < MAX_INSTRUCTION_LEN; i++)
+    while (state->pc.val != UINT16_MAX)
     {
-        current_instruction = program->insts[state->pc.val];
-
+        const a64rf_instruction_t current_instruction = program->insts[state->pc.val];
 
         printf("current pc is %d", state->pc.val);
         if (current_instruction.op == OP_NULL) {
@@ -70,15 +68,10 @@ void run_program_on_state(a64rf_program_t *program, a64rf_state_t *state)
         // this function will do pc+=1 (or branching) on the state
         run_instruction_on_state(&current_instruction, state);
 
-        if (state->pc.val == (uint16_t)-1)
-        {
-            // end of program
-            return;
-        }
-
-
-        
     }
+    
+
+    return;
     
 }
 

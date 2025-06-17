@@ -1,7 +1,7 @@
 /* a64rf_op.h */
 #pragma once
 #include "../../types.h"
-
+#include <stdbool.h>
 
 /*--------------------------------------------------------------------
  *  add_with_carry_u64()
@@ -48,6 +48,142 @@ static inline void mul_xform(a64rf_state_t *s,
 }
 
 
+static inline bool validate_add_imm_shift(uint32_t imm, unsigned shift,
+                       const char *func_name)
+{
+    if (imm > 0xFFFu) {
+        fprintf(stderr, "%s: imm 0x%X 超出 12-bit 範圍\n",
+                func_name, imm);
+        return false;
+    }
+    if (shift != 0 && shift != 12) {
+        fprintf(stderr, "%s: shift 必須是 0 或 12，收到 %u\n",
+                func_name, shift);
+        return false;
+    }
+    return true;
+}
+
+/*--------------------------------------------------------------------
+ *  validate_sp_alignment()
+ *  ─ 回傳 true  ⇢  SP 已 16-byte 對齊
+ *    回傳 false ⇢  SP 未對齊，並印出警告
+ *------------------------------------------------------------------*/
+static inline bool
+validate_sp_alignment(const a64rf_state_t *s, const char *func_name)
+{
+    // TODO: API for sp
+    uint64_t sp_val = s->sp.val;
+    if (sp_val & 0xF) {
+        fprintf(stderr,
+                "%s: SP (0x%016" PRIx64 ") not 16-byte aligned\n",
+                func_name, sp_val);
+        return false;
+    }
+    return true;
+}
+
+
+// static inlien bool validate_sp_align(SP);
+
+
+static inline void add_xform_imm_shift(a64rf_state_t *s,
+                                 const a64rf_gpr_idx_t Xd,
+                                 const a64rf_gpr_idx_t Xn,
+                                 const uint32_t imm,
+                                 const uint32_t shift)
+{
+    if (!validate_add_imm_shift(imm, shift, __func__))
+        return;
+
+    uint64_t operand1 = read_val_gpr(s, Xn);
+    uint64_t operand2 = ((uint64_t)imm << shift);
+
+    nzcv_t dummy_flag;
+    uint64_t result = add_with_carry_u64(operand1, operand2, 0, &dummy_flag);
+
+    write_val_gpr(s, Xd, result);
+}
+
+static inline void add_xform_imm(a64rf_state_t *s,
+                                 const a64rf_gpr_idx_t Xd,
+                                 const a64rf_gpr_idx_t Xn,
+                                 const uint32_t imm)
+{
+    add_xform_imm_shift(s, Xd, Xn, imm, 0u);
+}
+
+
+
+
+// static inline void add_sp_imm_shift(a64rf_state_t *s,
+//                                  const uint32_t imm,
+//                                  const uint32_t shift)
+// {
+//     if (!validate_add_imm_shift(imm, shift, __func__))
+//         return;
+//     uint64_t operand1 = s->sp.val;
+//     uint64_t operand2 = ((uint64_t)imm << shift);
+
+//     nzcv_t dummy_flag;
+//     uint64_t result = add_with_carry_u64(operand1, operand2, 0, &dummy_flag);
+
+
+
+//     validate_sp_alignment(s, __func__);
+// }
+
+// static inline void add_sp_imm(a64rf_state_t *s,
+//                                  const uint32_t imm)
+// {
+//     add_xform_imm_shift(s, SP, SP, imm, 0u);
+//     validate_sp_alignment(s, __func__);
+
+// }
+
+// static inline void add_reg_from_sp_imm_shift(a64rf_state_t *s,
+//                                              a64rf_gpr_idx_t Xd,
+//                                              uint32_t imm,
+//                                              uint32_t shift)
+// {
+//     add_xform_imm_shift(s, Xd, SP, imm, shift);
+// }
+
+// static inline void add_reg_from_sp_imm(a64rf_state_t *s,
+//                                              a64rf_gpr_idx_t Xd,
+//                                              uint32_t imm)
+// {
+//     add_xform_imm_shift(s, Xd, SP, imm, 0u);
+// }
+
+// static inline void add_sp_from_reg_imm_shift(a64rf_state_t *s,
+//                                              a64rf_gpr_idx_t Xn,
+//                                              uint32_t imm,
+//                                              uint32_t shift)
+// {
+//     add_xform_imm_shift(s, SP, Xn, imm, shift);
+//     validate_sp_alignment(s, __func__);
+
+// }
+
+
+// static inline void add_sp_from_reg_imm(a64rf_state_t *s,
+//                                              a64rf_gpr_idx_t Xn,
+//                                              uint32_t imm)
+// {
+//     add_xform_imm_shift(s, SP, Xn, imm, 0u);
+//     validate_sp_alignment(s, __func__);
+
+// }
+
+
+
+
+
+
+
+
+
 
 static inline void add_xform(a64rf_state_t *s,
                               const a64rf_gpr_idx_t Xd,
@@ -62,28 +198,69 @@ static inline void add_xform(a64rf_state_t *s,
     write_val_gpr(s, Xd, result);
 }
 
-/*--------------------------------------------------------------------
- *  add_xform_imm()
- *  ─ Xd = Xn + imm (imm is 12‑bit unsigned, no shift)
- *------------------------------------------------------------------*/
-static inline void add_xform_imm(a64rf_state_t *s,
-                                 const a64rf_gpr_idx_t Xd,
-                                 const a64rf_gpr_idx_t Xn,
-                                 uint32_t imm)
+/* 已有 enum，若想去掉前綴也可改成 SHIFT_LSL… */
+typedef enum {
+    A64_SHIFT_LSL = 0,
+    A64_SHIFT_LSR = 1,
+    A64_SHIFT_ASR = 2,
+    A64_SHIFT_ROR = 3
+} a64_shift_type_t;
+
+
+static inline bool validate_shift_reg(unsigned amount,
+                                      a64_shift_type_t type,
+                                      const char *fn)
 {
-    /* A64 ADD (immediate) encodes a 12‑bit literal (0‑4095). */
-    if (imm > 0xFFFu) {
-        fprintf(stderr,
-                "add_xform_imm: imm value 0x%X exceeds 12‑bit range (0‑0xFFF)\n",
-                imm);
-        return;
+    if (amount > 63) {
+        fprintf(stderr, "%s: shift amount %u out of range (0-63)\n", fn, amount);
+        return false;
     }
-
-    uint64_t src_n = read_val_gpr(s, Xn);
-    uint64_t result = src_n + (uint64_t)imm;
-
-    write_val_gpr(s, Xd, result);
+    if (type > A64_SHIFT_ROR) {
+        fprintf(stderr, "%s: illegal shift type %u\n", fn, type);
+        return false;
+    }
+    return true;
 }
+
+
+// static inline void add_xform_shift_reg(a64rf_state_t *s,
+//                                        a64rf_gpr_idx_t Xd,
+//                                        a64rf_gpr_idx_t Xn,
+//                                        a64rf_gpr_idx_t Xm,
+//                                        a64_shift_type_t shift_type,
+//                                        unsigned amount)
+// {
+//     if (!validate_shift_reg(amount, shift_type, __func__))
+//         return;
+
+//     if (Xn == SP || Xn == SP || Xm == SP) {
+//         fprintf(stderr, "%s: SP cannot be used as Rn/Rm here\n", __func__);
+//         return;
+//     }
+
+//     uint64_t op1 = read_val_gpr(s, Xn);
+//     uint64_t op2 = read_val_gpr(s, Xm);
+
+//     switch (shift_type) {
+//         case A64_SHIFT_LSL: op2 <<= amount; break;
+//         case A64_SHIFT_LSR: op2 >>= amount; break;
+//         case A64_SHIFT_ASR: op2 = (uint64_t)((int64_t)op2 >> amount); break;
+//         case A64_SHIFT_ROR:
+//             op2 = (op2 >> amount) | (op2 << ((64 - amount) & 63));
+//             break;
+//     }
+
+//     uint64_t result = op1 + op2;
+//     write_val_gpr(s, Xd, result);
+
+//     /* 若 Rd==SP，檢 16-byte alignment */
+//     if (Xd == SP) validate_sp_alignment(s, __func__);
+// }
+
+
+
+
+
 
 static inline void adds_xform(a64rf_state_t *s,
                               const a64rf_gpr_idx_t Xd,

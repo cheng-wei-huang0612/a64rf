@@ -27,7 +27,7 @@ typedef enum a64rf_gpr_idx {
     X24,      X25, X26, X27,
     X28,      X29, X30,
 
-    XZR, SP,
+    XZR, 
 
     GPR_IDX_MAX               /* Marks the end of the enum and is not a reg */
 } a64rf_gpr_idx_t;
@@ -35,6 +35,8 @@ typedef enum a64rf_gpr_idx {
 
 /* Number of entries in the general purpose register array. */
 #define GPR_COUNT   ((size_t)GPR_IDX_MAX)
+
+
 
 /* Representation of the NZCV condition flags used by the AArch64 ISA.  The
  * structure view allows bitfield access while 'word' exposes the raw value. */
@@ -53,6 +55,17 @@ typedef struct {
     uint32_t last_writer_pc;
     uint32_t access_cnt;
 } gpr_t;
+
+
+typedef struct {
+    uintptr_t val;
+    uint32_t last_writer_pc;
+    uint32_t access_cnt;
+} sp_t;
+
+
+
+
 
 /*
  * Enumeration of the thirty-two 128-bit vector registers.  The indices match
@@ -118,7 +131,7 @@ typedef union {
 
 
 
-#define STACK_SIZE (16 * 1024) // 1kB ?
+#define STACK_SIZE (16 * 1024)
 #define MEMORY_SIZE (16 * 1024)
 
 
@@ -126,6 +139,7 @@ typedef union {
 typedef struct {
     gpr_t    gpr[GPR_COUNT];
     vreg_t   vreg[VREG_COUNT];
+    sp_t     sp;
 
     uint8_t  stack[STACK_SIZE];
     uint8_t  memory[MEMORY_SIZE];
@@ -133,3 +147,5 @@ typedef struct {
     nzcv_t   nzcv;   /* PSTATE.NZCV               */
     fpsr_t   fpsr;   /* FPSR.QC (飽和累積旗標)     */
 } a64rf_state_t;
+
+

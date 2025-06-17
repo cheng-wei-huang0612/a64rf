@@ -83,3 +83,8 @@ static inline void write_val_gpr(a64rf_state_t *state, a64rf_gpr_idx_t gpr_idx, 
     if (gpr_idx != XZR)
         state->gpr[gpr_idx].val = val;
 }
+
+static inline void write_zero_gpr(a64rf_state_t *state, a64rf_gpr_idx_t gpr_idx) {
+    write_val_gpr(state, gpr_idx, (uint64_t)0);
+}
+

@@ -179,3 +179,10 @@ write_vreg_all(a64rf_state_t *state, a64rf_vreg_idx_t idx, const vreg_t *src)
     }
     state->vreg[idx] = *src;           /* 結構複製 */
 }
+
+
+static inline void write_zero_vreg(a64rf_state_t *state, a64rf_vreg_idx_t idx) 
+{
+    write_d_vreg_hi(state, idx, (uint64_t)0);
+    write_d_vreg_lo(state, idx, (uint64_t)0);
+}

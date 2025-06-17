@@ -26,7 +26,7 @@ extern "C" {
  * API 
  * -------------------------------------------------------------------------- */
 #include "a64rf/api/gpr.h"
-#include "a64rf/api/nzcv_flag.h"
+#include "a64rf/api/flags.h"
 #include "a64rf/api/vreg/read.h"
 #include "a64rf/api/vreg/print.h"
 #include "a64rf/api/vreg/write.h"

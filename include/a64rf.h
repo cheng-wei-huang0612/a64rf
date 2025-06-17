@@ -21,6 +21,9 @@ extern "C" {
  * -------------------------------------------------------------------------- */
 #include "types.h"   /* basic enums & structures (state, regs, flags)   */
 
+#include "a64rf/state_utils.h"
+#include "a64rf/program.h"
+
 
 /* --------------------------------------------------------------------------
  * API 
@@ -30,6 +33,8 @@ extern "C" {
 #include "a64rf/api/vreg/read.h"
 #include "a64rf/api/vreg/print.h"
 #include "a64rf/api/vreg/write.h"
+
+
 
 
 

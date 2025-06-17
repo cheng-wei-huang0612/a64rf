@@ -34,10 +34,14 @@ static inline void set_flags_logical(uint64_t res, nzcv_t *f)
 
 
 
-static inline void mul_xform(a64rf_state_t *s,
+
+
+
+static inline void __mul_xform(a64rf_state_t *s,
                              const a64rf_gpr_idx_t Xd, 
                              const a64rf_gpr_idx_t Xn, 
-                             const a64rf_gpr_idx_t Xm) 
+                             const a64rf_gpr_idx_t Xm,
+                             const a64rf_gpr_idx_t Xa)
 {
     uint64_t src_n = read_val_gpr(s, Xn);
     uint64_t src_m = read_val_gpr(s, Xm);
@@ -46,6 +50,7 @@ static inline void mul_xform(a64rf_state_t *s,
 
     write_val_gpr(s, Xd, result);
 }
+
 
 
 static inline bool validate_add_imm_shift(uint32_t imm, unsigned shift,

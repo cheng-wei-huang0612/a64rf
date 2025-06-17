@@ -8,7 +8,7 @@
 #include "api/vreg/write.h"
 
 void wipe(void *p, size_t n) {
-    memset_explicit(p, 0, n);   /* 原型與 memset 完全相同 */
+    memset(p, 0, n);   /* 原型與 memset 完全相同 */
 }
 
 
@@ -33,7 +33,7 @@ a64rf_state_t initialize_a64rf_state(void)
 
     wipe(state.memory, sizeof(state.memory));
     
-
+    state.pc.val = 0;
 
 
     write_zero_nzcv(&state);
@@ -61,12 +61,13 @@ void reset_a64rf_state(a64rf_state_t *state)
 
     wipe(state->memory, sizeof(state->memory));
     
+    state->pc.val = 0;
 
     write_zero_nzcv(state);
 
     write_zero_fpsr(state);
     
-    return state;
+
 
 }
 
@@ -110,3 +111,6 @@ bool equal_a64rf_state(a64rf_state_t *state1, a64rf_state_t *state2)
     // return true if delta_state = 0
 
 }
+
+
+

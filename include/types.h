@@ -129,6 +129,12 @@ typedef union {
     uint32_t word;
 } fpsr_t;
 
+typedef struct
+{
+    uint16_t val;
+} pc_t;
+
+
 
 
 #define STACK_SIZE (16 * 1024)
@@ -144,8 +150,45 @@ typedef struct {
     uint8_t  stack[STACK_SIZE];
     uint8_t  memory[MEMORY_SIZE];
 
+    pc_t     pc;
+
     nzcv_t   nzcv;   /* PSTATE.NZCV               */
     fpsr_t   fpsr;   /* FPSR.QC (飽和累積旗標)     */
 } a64rf_state_t;
 
 
+
+typedef enum {
+    OP_NULL = 0,
+    OP_RET = 1,
+    OP_ADD, OP_SUB, OP_MUL,
+    OP_MOV, OP_CMP, OP_CCMP,
+    /* …依需求持續擴充… */
+    OP_COUNT
+} a64rf_op_enum_t;
+
+typedef enum {
+    SHIFT_NONE = 0,
+    SHIFT_LSL, SHIFT_LSR, SHIFT_ASR, SHIFT_ROR
+} a64rf_shift_t;
+
+
+typedef struct {
+    a64rf_op_enum_t op;             // 指令種類
+    a64rf_gpr_idx_t  dst;            // 目的暫存器編號
+    a64rf_gpr_idx_t  src0;           // 第一來源暫存器
+    a64rf_gpr_idx_t  src1;           // 第二來源暫存器（有些指令不用）
+    a64rf_gpr_idx_t  src2;           // 第三來源暫存器（很少用，保留）
+    uint64_t imm0;           // 立即數 0
+    uint64_t imm1;           // 立即數 1
+    uint64_t imm2;           // 立即數 2
+    a64rf_shift_t  shift_type;     // LSL/LSR/ASR/ROR
+    pc_t     target_pc;     // this is for branching insructions
+    // uint8_t  nzcv_in_use;    // 1=此指令會讀 PSTATE.NZCV；0=不讀
+} a64rf_instruction_t;
+
+#define MAX_INSTRUCTION_LEN 256
+
+typedef struct {
+    a64rf_instruction_t insts[MAX_INSTRUCTION_LEN];
+} a64rf_program_t;

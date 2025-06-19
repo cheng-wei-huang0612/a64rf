@@ -1,6 +1,7 @@
 /* a64rf_op.h */
 #pragma once
 #include "../../types.h"
+
 #include <stdbool.h>
 
 /*--------------------------------------------------------------------
@@ -203,13 +204,24 @@ static inline void add_xform(a64rf_state_t *s,
     write_val_gpr(s, Xd, result);
 }
 
-/* 已有 enum，若想去掉前綴也可改成 SHIFT_LSL… */
-typedef enum {
-    A64_SHIFT_LSL = 0,
-    A64_SHIFT_LSR = 1,
-    A64_SHIFT_ASR = 2,
-    A64_SHIFT_ROR = 3
-} a64_shift_type_t;
+
+void add_xd_xn_xm(a64rf_program_t *program, a64rf_gpr_idx_t dst, a64rf_gpr_idx_t src0, a64rf_gpr_idx_t src1) 
+{
+    a64rf_instruction_t instruction;
+    instruction.op = OP_ADD;
+    instruction.dst = dst;
+    instruction.src0 = src0;
+    instruction.src1 = src1;
+    instruction.src2 = XZR;
+    instruction.imm0 = 0;
+    instruction.imm1 = 0;
+    instruction.imm2 = 0;
+    instruction.shift_type = SHIFT_NONE;
+    instruction.target_pc = increment_pc(program->add_instruction_to_program);
+    
+    program->insts[program->add_instruction_to_program.val] = instruction;
+    program->add_instruction_to_program = increment_pc(program->add_instruction_to_program);
+}
 
 
 static inline bool validate_shift_reg(unsigned amount,
@@ -546,4 +558,23 @@ static inline void orr_xform(a64rf_state_t *s,
     uint64_t result = src_n | src_m;
 
     write_val_gpr(s, Xd, result);
+}
+
+
+void ret(a64rf_program_t *program) 
+{
+    a64rf_instruction_t instruction;
+    instruction.op = OP_RET;
+    instruction.dst = XZR;
+    instruction.src0 = XZR;
+    instruction.src1 = XZR;
+    instruction.src2 = XZR;
+    instruction.imm0 = 0;
+    instruction.imm1 = 0;
+    instruction.imm2 = 0;
+    instruction.shift_type = SHIFT_NONE;
+    instruction.target_pc.val = (uint16_t)(-1);
+    
+    program->insts[program->add_instruction_to_program.val] = instruction;
+    program->add_instruction_to_program = increment_pc(program->add_instruction_to_program);
 }

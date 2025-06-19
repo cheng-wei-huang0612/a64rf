@@ -156,7 +156,13 @@ typedef struct {
     fpsr_t   fpsr;   /* FPSR.QC (飽和累積旗標)     */
 } a64rf_state_t;
 
-
+/* 已有 enum，若想去掉前綴也可改成 SHIFT_LSL… */
+typedef enum {
+    A64_SHIFT_LSL = 0,
+    A64_SHIFT_LSR = 1,
+    A64_SHIFT_ASR = 2,
+    A64_SHIFT_ROR = 3
+} a64_shift_type_t;
 
 typedef enum {
     OP_NULL = 0,
@@ -195,3 +201,12 @@ typedef struct {
     a64rf_instruction_t insts[MAX_INSTRUCTION_LEN];
     pc_t    add_instruction_to_program;
 } a64rf_program_t;
+
+
+static inline pc_t increment_pc(pc_t old_pc)
+{
+    pc_t new_pc;
+    new_pc.val = (old_pc.val + 1);
+    return new_pc;
+}
+

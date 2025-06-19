@@ -38,11 +38,10 @@ static inline void set_flags_logical(uint64_t res, nzcv_t *f)
 
 
 
-static inline void __mul_xform(a64rf_state_t *s,
+static inline void mul_xform(a64rf_state_t *s,
                              const a64rf_gpr_idx_t Xd, 
                              const a64rf_gpr_idx_t Xn, 
-                             const a64rf_gpr_idx_t Xm,
-                             const a64rf_gpr_idx_t Xa)
+                             const a64rf_gpr_idx_t Xm)
 {
     uint64_t src_n = read_val_gpr(s, Xn);
     uint64_t src_m = read_val_gpr(s, Xm);
@@ -52,6 +51,24 @@ static inline void __mul_xform(a64rf_state_t *s,
     write_val_gpr(s, Xd, result);
 }
 
+
+void mul_xd_xn_xm(a64rf_program_t *program, a64rf_gpr_idx_t dst, a64rf_gpr_idx_t src0, a64rf_gpr_idx_t src1) 
+{
+    a64rf_instruction_t instruction;
+    instruction.op = OP_MUL;
+    instruction.dst = dst;
+    instruction.src0 = src0;
+    instruction.src1 = src1;
+    instruction.src2 = XZR;
+    instruction.imm0 = 0;
+    instruction.imm1 = 0;
+    instruction.imm2 = 0;
+    instruction.shift_type = SHIFT_NONE;
+    instruction.target_pc = increment_pc(program->add_instruction_to_program);
+    
+    program->insts[program->add_instruction_to_program.val] = instruction;
+    program->add_instruction_to_program = increment_pc(program->add_instruction_to_program);
+}
 
 
 static inline bool validate_add_imm_shift(uint32_t imm, unsigned shift,
@@ -293,6 +310,43 @@ static inline void adds_xform(a64rf_state_t *s,
     s->nzcv = flags;
     write_val_gpr(s, Xd, result);
 }
+
+
+static inline void sub_xform(a64rf_state_t *s,
+                              const a64rf_gpr_idx_t Xd,
+                              const a64rf_gpr_idx_t Xn,
+                              const a64rf_gpr_idx_t Xm)
+{
+    uint64_t src_n = read_val_gpr(s, Xn);
+    uint64_t src_m = ~read_val_gpr(s, Xm);
+
+    nzcv_t   dummy_flags;
+    uint64_t result = add_with_carry_u64(src_n, src_m, 1, &dummy_flags);
+
+
+    write_val_gpr(s, Xd, result);
+}
+
+
+void sub_xd_xn_xm(a64rf_program_t *program, a64rf_gpr_idx_t dst, a64rf_gpr_idx_t src0, a64rf_gpr_idx_t src1) 
+{
+    a64rf_instruction_t instruction;
+    instruction.op = OP_SUB;
+    instruction.dst = dst;
+    instruction.src0 = src0;
+    instruction.src1 = src1;
+    instruction.src2 = XZR;
+    instruction.imm0 = 0;
+    instruction.imm1 = 0;
+    instruction.imm2 = 0;
+    instruction.shift_type = SHIFT_NONE;
+    instruction.target_pc = increment_pc(program->add_instruction_to_program);
+    
+    program->insts[program->add_instruction_to_program.val] = instruction;
+    program->add_instruction_to_program = increment_pc(program->add_instruction_to_program);
+}
+
+
 
 static inline void subs_xform(a64rf_state_t *s,
                               const a64rf_gpr_idx_t Xd,

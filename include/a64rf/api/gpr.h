@@ -22,52 +22,67 @@ static inline uint64_t read_val_gpr(const a64rf_state_t* state, a64rf_gpr_idx_t 
     return (gpr_idx == XZR) ? 0 : state->gpr[gpr_idx].val;
 }
 
-/*
- * Print the value of a general purpose register using the requested radix.
- * Supported radixes are "hex", "dec" and "bin".  Passing NULL defaults to
- * hexadecimal output.
- *
- * \param state   CPU state containing the register file.
- * \param gpr_idx Register index to print.
- * \param radix   Optional radix string.
- */
-static inline void print_val_gpr(const a64rf_state_t *state, a64rf_gpr_idx_t gpr_idx,
-              const char *radix)
-{
-    uint64_t val = read_val_gpr(state, gpr_idx);
 
-    /* default to hexadecimal if radix is NULL */
-    if (radix == NULL || strcmp(radix, "hex") == 0 || strcmp(radix, "hexadecimal") == 0) {
-        printf("X%d = 0x%016" PRIx64 "\n", (int)gpr_idx, val);
-    } else if (strcmp(radix, "dec") == 0 || strcmp(radix, "decimal") == 0) {
-        printf("X%d = %" PRIu64 "\n", (int)gpr_idx, val);
-    } else if (strcmp(radix, "bin") == 0 || strcmp(radix, "binary") == 0) {
-        /* print 64‑bit binary with 0b prefix */
+typedef enum {
+    RADIX_HEX = 0,
+    RADIX_DEC,
+    RADIX_BIN
+} radix_t;
+
+static inline void print_bin64(uint64_t v)
+{
+    for (int i = 63; i >= 0; --i)
+        putchar((v >> i) & 1 ? '1' : '0');
+}
+
+void print_val_gpr(const a64rf_state_t *state,
+                   a64rf_gpr_idx_t      gpr_idx,
+                   radix_t              radix,
+                   bool                 is_signed)
+{
+    uint64_t raw = read_val_gpr(state, gpr_idx);
+
+    /* 預設：HEX + unsigned */
+    if (radix > RADIX_BIN) radix = RADIX_HEX;
+
+    switch (radix) {
+    case RADIX_DEC:
+        if (is_signed)
+            printf("X%d = %" PRIi64 "\n", (int)gpr_idx, (int64_t)raw);
+        else
+            printf("X%d = %" PRIu64 "\n", (int)gpr_idx, raw);
+        break;
+
+    case RADIX_BIN:
         printf("X%d = 0b", (int)gpr_idx);
-        for (int i = 63; i >= 0; --i) {
-            putchar((val >> i) & 1 ? '1' : '0');
-        }
+        print_bin64(raw);
         putchar('\n');
-    } else {
-        fprintf(stderr,
-                "print_val_gpr: unknown radix \"%s\" (use \"hex\", \"dec\", or \"bin\")\n",
-                radix);
+        break;
+
+    case RADIX_HEX:
+    default:
+        if (is_signed)
+            printf("X%d = 0x%016" PRIx64 "  /* %" PRIi64 " */\n",
+                   (int)gpr_idx, raw, (int64_t)raw);
+        else
+            printf("X%d = 0x%016" PRIx64 "\n", (int)gpr_idx, raw);
+        break;
     }
 }
 
 /*
  * Convenience wrapper to print a register value in hexadecimal.
  */
-static inline void print_val_gpr_to_hex(const a64rf_state_t *state, a64rf_gpr_idx_t gpr_idx) {
-    print_val_gpr(state, gpr_idx, "hex");
+static inline void print_val_gpr_to_unsigned_hex(const a64rf_state_t *state, a64rf_gpr_idx_t gpr_idx) {
+    print_val_gpr(state, gpr_idx, RADIX_HEX, false);
 }
 
 
 /*
  * Convenience wrapper to print a register value in decimal.
  */
-static inline void print_val_gpr_to_dec(const a64rf_state_t *state, a64rf_gpr_idx_t gpr_idx) {
-    print_val_gpr(state, gpr_idx, "dec");
+static inline void print_val_gpr_to_unsigned_dec(const a64rf_state_t *state, a64rf_gpr_idx_t gpr_idx) {
+    print_val_gpr(state, gpr_idx, RADIX_DEC, false);
 }
 
 /*

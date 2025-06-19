@@ -160,7 +160,9 @@ typedef struct {
 
 typedef enum {
     OP_NULL = 0,
-    OP_RET = 1,
+    OP_NOP,
+    OP_RET,
+    OP_LABEL,
     OP_ADD, OP_SUB, OP_MUL,
     OP_MOV, OP_CMP, OP_CCMP,
     /* …依需求持續擴充… */
@@ -191,4 +193,5 @@ typedef struct {
 
 typedef struct {
     a64rf_instruction_t insts[MAX_INSTRUCTION_LEN];
+    pc_t    add_instruction_to_program;
 } a64rf_program_t;

@@ -1,7 +1,7 @@
 #include <string.h>
 #include <stdio.h>
-#include "a64rf_state.h"
-#include "print_state.h"
+#include "../include/types.h"
+#include "../include/print_state.h" 
 
 #define MAX_SNAP 512
 static a64rf_state_t snap_ref[MAX_SNAP];

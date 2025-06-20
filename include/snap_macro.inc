@@ -10,6 +10,12 @@
 
 #ifdef A64RF_TRACE
         .macro  SNAP_REGS idx:req, side:req
+
+        stp     x29, x30, [sp, -16]!
+        mov     x29, sp
+
+
+
         /* -------------------------------------------------------- *
          * 1) 先保存 caller-saved 參數暫存器 x0‥x3                  *
          * -------------------------------------------------------- */
@@ -44,6 +50,8 @@
         add     sp, sp, #304
         ldp     x2, x3, [sp, #16]
         ldp     x0, x1, [sp], #32
+
+        ldp     x29, x30, [sp], 16
         .endm
 #else
         .macro  SNAP_REGS idx:req, side:req

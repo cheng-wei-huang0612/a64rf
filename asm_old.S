@@ -13,9 +13,12 @@
         .p2align 2
 _foo:   
 
+        stp     x29, x30, [sp, -16]!
+        mov     x29, sp
         /* ── snapshot #0 入口狀態 ── */
 #ifdef A64RF_TRACE
         SNAP_REGS 0, 1               /* idx=0, side=1 (Asm) */
+
 #endif
 
         /* X0 = dst,  X1 = src */
@@ -30,7 +33,9 @@ _foo:
 
         /* ── snapshot #1 出口狀態 ── */
 #ifdef A64RF_TRACE
+
         SNAP_REGS 1, 1               /* idx=1, side=1 (Asm) */
 #endif
 
+        ldp     x29, x30, [sp], 16
         ret

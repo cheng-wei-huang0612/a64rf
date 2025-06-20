@@ -15,12 +15,10 @@ void run_instruction_on_state(const a64rf_instruction_t *instruction,
     switch (instruction->op) {
 
     case OP_NULL:
-        /* 前進到下一條指令 */
         state->pc.val += 1;
         break;
 
     case OP_RET:
-        /* 直接跳到目標 PC */
         state->pc = instruction->target_pc;
         break;
 
@@ -37,7 +35,6 @@ void run_instruction_on_state(const a64rf_instruction_t *instruction,
         break;
 
     case OP_MUL:
-        /* 先遞增 PC，再執行加法變換 */
         printf("perform mul %d, %d, %d\n\n",
                instruction->dst, instruction->src0, instruction->src1);
         mul_xform(state, instruction->dst, instruction->src0, instruction->src1);

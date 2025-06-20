@@ -5,7 +5,6 @@
 
 int main(void)
 {
-    // goal
     int64_t a, b, c;
     a = 1;
     b = 10;

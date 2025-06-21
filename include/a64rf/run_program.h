@@ -23,22 +23,33 @@ void run_instruction_on_state(const a64rf_instruction_t *instruction,
         break;
 
     case OP_ADD:
-        printf("perform add %d, %d, %d\n\n",
+        printf("add x%d, x%d, x%d\n\n",
                instruction->dst, instruction->src0, instruction->src1);
         add_xform(state, instruction->dst, instruction->src0, instruction->src1);
         break;
 
     case OP_SUB:
-        printf("perform add %d, %d, %d\n\n",
+        printf("sub x%d, x%d, x%d\n\n",
                instruction->dst, instruction->src0, instruction->src1);
         sub_xform(state, instruction->dst, instruction->src0, instruction->src1);
         break;
 
     case OP_MUL:
-        printf("perform mul %d, %d, %d\n\n",
+        printf("mul x%d, x%d, x%d\n\n",
                instruction->dst, instruction->src0, instruction->src1);
         mul_xform(state, instruction->dst, instruction->src0, instruction->src1);
         break;
+
+    case OP_BRANCH:
+        
+
+    case OP_PRINT_GPR:
+        printf("print all general purpose register\n\n");
+        
+        break;
+
+        
+        
     
     /* 之後可以在這裡加入更多 opcode */
     default:

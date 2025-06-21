@@ -3,6 +3,7 @@
 #include "../../types.h"
 
 #include <stdbool.h>
+#include <string.h>
 
 /*--------------------------------------------------------------------
  *  add_with_carry_u64()
@@ -614,6 +615,25 @@ static inline void orr_xform(a64rf_state_t *s,
     write_val_gpr(s, Xd, result);
 }
 
+void branch(a64rf_program_t *program, a64rf_label_t label)
+{
+    a64rf_instruction_t instruction;
+    instruction.op = OP_BRANCH;
+    instruction.dst = XZR;
+    instruction.src0 = XZR;
+    instruction.src1 = XZR;
+    instruction.src2 = XZR;
+    instruction.imm0 = 0;
+    instruction.imm1 = 0;
+    instruction.imm2 = 0;
+    instruction.shift_type = SHIFT_NONE;
+    strcpy(instruction.label.name_of_label, label.name_of_label);
+
+    instruction.target_pc.val = (uint16_t)(-1);
+    
+    program->insts[program->add_instruction_to_program.val] = instruction;
+    program->add_instruction_to_program = increment_pc(program->add_instruction_to_program);
+}
 
 void ret(a64rf_program_t *program) 
 {
@@ -632,3 +652,6 @@ void ret(a64rf_program_t *program)
     program->insts[program->add_instruction_to_program.val] = instruction;
     program->add_instruction_to_program = increment_pc(program->add_instruction_to_program);
 }
+
+
+

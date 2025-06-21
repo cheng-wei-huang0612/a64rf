@@ -39,28 +39,16 @@ void run_program_on_state(a64rf_program_t *program, a64rf_state_t *state)
     }
 
     // we should get the respective pc for each label first.
+    // 1. collect all branching insructions 
+    // 2. collect all labels
+    // 3. replace all target_pc of branching instructions with correct porgram coordinates
+    // 4. check if there is any branching instructions are invalid (i.e., no corresponding label)
 
 
     while (state->pc.val != UINT16_MAX)
     {
         const a64rf_instruction_t current_instruction = program->insts[state->pc.val];
 
-        printf("current pc is %d. ", state->pc.val);
-        if (current_instruction.op == OP_NULL) {
-            printf("current instruction is NULL\n\n");
-        }
-        else if (current_instruction.op == OP_NOP) {
-            printf("current instruction is RET\n\n");
-        }
-        else if (current_instruction.op == OP_RET) {
-            printf("current instruction is RET\n\n");
-        }
-        else if (current_instruction.op == OP_ADD) {
-            printf("current instruction is ADD\n\n");
-        }
-        else {
-            printf("current instruction opcode is %d\n\n", current_instruction.op);
-        }
 
         // run the instruction on state
         // this function will do pc+=1 (or branching) on the state

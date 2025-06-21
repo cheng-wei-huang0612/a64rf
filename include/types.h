@@ -169,9 +169,10 @@ typedef enum {
     OP_NOP,
     OP_RET,
     OP_LABEL,
+    OP_PRINT_GPR,
+    OP_BRANCH,
     OP_ADD, OP_SUB, OP_MUL,
     OP_MOV, OP_CMP, OP_CCMP,
-    /* …依需求持續擴充… */
     OP_COUNT
 } a64rf_op_enum_t;
 
@@ -179,6 +180,12 @@ typedef enum {
     SHIFT_NONE = 0,
     SHIFT_LSL, SHIFT_LSR, SHIFT_ASR, SHIFT_ROR
 } a64rf_shift_t;
+
+typedef struct
+{
+    char name_of_label[32];
+} a64rf_label_t;
+
 
 
 typedef struct {
@@ -193,13 +200,16 @@ typedef struct {
     a64rf_shift_t  shift_type;     // LSL/LSR/ASR/ROR
     pc_t     target_pc;     // this is for branching insructions
     // uint8_t  nzcv_in_use;    // 1=此指令會讀 PSTATE.NZCV；0=不讀
+    a64rf_label_t label;
 } a64rf_instruction_t;
 
 #define MAX_INSTRUCTION_LEN 256
 
 typedef struct {
     a64rf_instruction_t insts[MAX_INSTRUCTION_LEN];
-    pc_t    add_instruction_to_program;
+    pc_t    add_instruction_to_program; 
+    // TODO: rename to `instruction_coordinate`
+
 } a64rf_program_t;
 
 

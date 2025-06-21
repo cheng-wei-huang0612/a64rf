@@ -2,9 +2,26 @@
 #include "a64rf.h"
 #include "a64rf/api/state.h"
 
+
+static inline void push_u64(a64rf_state_t *s, uint64_t value)
+{
+    s->sp.val -= 8;                          // stack grows downward
+    *((uint64_t *)s->sp.val) = value;        // store value
+}
+
+static inline uint64_t pop_u64(a64rf_state_t *s)
+{
+    uint64_t value = *((uint64_t *)s->sp.val); // load
+    s->sp.val += 8;                            // free space
+    return value;
+}
+
+
 int main(void)
 {
-    a64rf_state_t st = initialize_a64rf_state();
+    a64rf_state_t st = {0};
+    initialize_a64rf_state(&st);
+
 
     /* Fill a few registers with sample values */
     write_val_gpr(&st, X0, 2);
@@ -24,26 +41,12 @@ int main(void)
     /* Vector addition via helper */
     add_dform(&st, V2, V0, V1);
 
-    /* Store some bytes on the stack and in memory */
-    for (size_t i = 0; i < 16; ++i) {
-        st.stack[i]  = (uint8_t)i;
-        st.memory[i] = (uint8_t)(0xff - i);
-    }
-
-    puts("--- General Purpose Registers and Flags ---");
-    print_gprs_and_nzcv(&st);
-
-    puts("\n--- Vector Registers and FPSR ---");
-    print_vregs_and_fpsr(&st);
+    
+    push_u64(&st, 0x0123456789ABCDEF);
 
     puts("\n--- Stack Dump ---");
     print_stack(&st);
 
-    puts("\n--- Memory Dump ---");
-    print_memory(&st);
-
-    puts("\n--- Complete State ---");
-    print_state(&st);
 
     return 0;
 }

@@ -93,19 +93,19 @@ static inline bool validate_add_imm_shift(uint32_t imm, unsigned shift,
  *  ─ 回傳 true  ⇢  SP 已 16-byte 對齊
  *    回傳 false ⇢  SP 未對齊，並印出警告
  *------------------------------------------------------------------*/
-static inline bool
-validate_sp_alignment(const a64rf_state_t *s, const char *func_name)
-{
-    // TODO: API for sp
-    uint64_t sp_val = s->sp.val;
-    if (sp_val & 0xF) {
-        fprintf(stderr,
-                "%s: SP (0x%016" PRIx64 ") not 16-byte aligned\n",
-                func_name, sp_val);
-        return false;
-    }
-    return true;
-}
+// static inline bool
+// validate_sp_alignment(const a64rf_state_t *s, const char *func_name)
+// {
+//     // TODO: API for sp
+//     uint64_t sp_val = s->sp.val;
+//     if (sp_val & 0xF) {
+//         fprintf(stderr,
+//                 "%s: SP (0x%016" PRIx64 ") not 16-byte aligned\n",
+//                 func_name, sp_val);
+//         return false;
+//     }
+//     return true;
+// }
 
 
 // static inlien bool validate_sp_align(SP);

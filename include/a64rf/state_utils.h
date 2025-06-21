@@ -13,37 +13,38 @@ void wipe(void *p, size_t n) {
 
 
 
-a64rf_state_t initialize_a64rf_state(void)
-{
-    a64rf_state_t state = {0};
+// a64rf_state_t initialize_a64rf_state(a64rf_state_t * state)
+// {
+//     a64rf_state_t state = {0};
 
-    for (size_t i = 0; i < GPR_COUNT; i++)
-    {
-        write_zero_gpr((&state), i);
-    }
+//     for (size_t i = 0; i < GPR_COUNT; i++)
+//     {
+//         write_zero_gpr((&state), i);
+//     }
 
-    for (size_t i = 0; i < VREG_COUNT; i++)
-    {
-        write_zero_vreg((&state), i);
-    }
+//     for (size_t i = 0; i < VREG_COUNT; i++)
+//     {
+//         write_zero_vreg((&state), i);
+//     }
 
-    state.sp.val = (uintptr_t)&(state.stack[STACK_SIZE]);
+//     //state.sp.val =(void *)&state.stack[STACK_SIZE-1];
+//     state.sp.val = &state.stack[STACK_SIZE-1];
 
-    wipe(state.stack, sizeof(state.stack));
+//     wipe(state.stack, sizeof(state.stack));
 
-    wipe(state.memory, sizeof(state.memory));
+//     wipe(state.memory, sizeof(state.memory));
     
-    state.pc.val = 0;
+//     state.pc.val = 0;
 
 
-    write_zero_nzcv(&state);
+//     write_zero_nzcv(&state);
 
-    write_zero_fpsr(&state);
+//     write_zero_fpsr(&state);
     
-    return state;
-}
+//     return state;
+// }
 
-void reset_a64rf_state(a64rf_state_t *state)
+void initialize_a64rf_state(a64rf_state_t *state)
 {  
     for (size_t i = 0; i < GPR_COUNT; i++)
     {
@@ -55,7 +56,7 @@ void reset_a64rf_state(a64rf_state_t *state)
         write_zero_vreg(state, i);
     }
 
-    state->sp.val = (uintptr_t)&state->stack[STACK_SIZE];
+    state->sp.val = &state->stack[STACK_SIZE];
 
     wipe(state->stack, sizeof(state->stack));
 

@@ -57,11 +57,18 @@ typedef struct {
 } gpr_t;
 
 
+// typedef struct {
+//     uintptr_t val;
+//     uint32_t last_writer_pc;
+//     uint32_t access_cnt;
+// } sp_t;
+
 typedef struct {
-    uintptr_t val;
+    void * val;
     uint32_t last_writer_pc;
     uint32_t access_cnt;
 } sp_t;
+
 
 
 
@@ -137,8 +144,8 @@ typedef struct
 
 
 
-#define STACK_SIZE (16 * 1024)
-#define MEMORY_SIZE (16 * 1024)
+#define STACK_SIZE (1 * 1024)
+#define MEMORY_SIZE (1 * 1024)
 
 
 

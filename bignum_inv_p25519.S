@@ -741,20 +741,29 @@ S2N_BN_SYMBOL(bignum_inv_p25519):
         and     x5, x5, #0x7fffffffffffffff
         stp     x2, x3, [g]
         stp     x4, x5, [g+2*N]
-#ifdef A64RF_TRACE
-        SNAP_REGS 2, 1               /* idx=0, side=1 (Asm) */
-#endif
 // Also maintain weakly reduced < 2*p_25519 vector [u,v] such that
 // [f,g] == x * 2^{590-59*i} * [u,v] (mod p_25519)
 // starting with [p_25519,x] == x * 2^{590-59*0} * [0,2^-590] (mod p_25519)
 
         stp     xzr, xzr, [u]
         stp     xzr, xzr, [u+2*N]
-
+#ifdef A64RF_TRACE
+        SNAP_REGS 2, 1               /* idx=0, side=1 (Asm) */
+#endif
         movbig(x10, 0xa0f9, 0x9e23, 0x7502, 0x2099)
         movbig(x11, 0xa8c6, 0x8f3f, 0x1d13, 0x2595)
         movbig(x12, 0x6c6c, 0x8938, 0x05ac, 0x5242)
         movbig(x13, 0x2765, 0x08b2, 0x4177, 0x0615)
+#ifdef A64RF_TRACE
+        SNAP_REGS 3, 1               /* idx=0, side=1 (Asm) */
+#endif
+
+    movi    v0.16b,  #0x11      /* 填充測試資料 */
+    movi    v31.16b, #0xFF
+
+#ifdef A64RF_TRACE
+        SNAP_STATE 4, 1, 32               /* idx=0, side=1 (Asm) */
+#endif  
 
         stp     x10, x11, [v]
         stp     x12, x13, [v+2*N]

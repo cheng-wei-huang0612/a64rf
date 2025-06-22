@@ -98,6 +98,8 @@ X13 = 0x276508b241770615
 ...
 ```
 
+> **Note:** The `movbig` macro definition and the demo asm was adapted from the [AWS s2n bignum library](https://github.com/awslabs/s2n-bignum.git). Thanks to AWS and the open-source community for sharing valuable resources.
+
 > ⚠️ **Note:** Automated testing is not yet fully implemented; current testing relies on manual verification.
 
 ---

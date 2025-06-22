@@ -18,8 +18,8 @@ int main(void)
     write_val_gpr(&s, X2, 0ULL);
     puts("=== Initial ===");
 
-    print_val_gpr_to_hex(&s, X0);
-    print_val_gpr_to_hex(&s, X1);
+    print_val_gpr_to_unsigned_hex(&s, X0);
+    print_val_gpr_to_unsigned_hex(&s, X1);
     print_nzcv(&s);
 
 
@@ -27,7 +27,7 @@ int main(void)
     puts("\n=== ADDS X2, X0, X1 ===");
     adds_xform(&s, X2, X0, X1);
 
-    print_val_gpr_to_hex(&s, X2);
+    print_val_gpr_to_unsigned_hex(&s, X2);
     print_nzcv(&s);
 
 

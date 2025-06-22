@@ -18,7 +18,7 @@ int main(void)
     puts("=== SBCS X5, X3, X2 ===");
     sbcs_xform(&s, X5, X3, X2);
 
-    print_val_gpr_to_hex(&s, X5);
+    print_val_gpr_to_unsigned_hex(&s, X5);
     print_nzcv(&s);
 
     /* Stage 5: CMP and CMN */
@@ -36,7 +36,7 @@ int main(void)
     puts("\n=== ANDS X6, X3, X2 ===");
     ands_xform(&s, X6, X3, X2);
 
-    print_val_gpr_to_hex(&s, X6);
+    print_val_gpr_to_unsigned_hex(&s, X6);
     print_nzcv(&s);
 
 

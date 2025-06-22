@@ -1,4 +1,5 @@
 /.vscode
+tests/example000
 tests/example001
 tests/example002
 tests/example003

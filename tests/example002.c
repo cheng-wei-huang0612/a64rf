@@ -21,7 +21,7 @@ int main(void)
     puts("=== ADCS X3, X2, X2 ===");
     adcs_xform(&s, X3, X2, X2);
 
-    print_val_gpr_to_hex(&s, X3);
+    print_val_gpr_to_unsigned_hex(&s, X3);
     print_nzcv(&s);
 
 
@@ -29,7 +29,7 @@ int main(void)
     puts("\n=== SUBS X4, X2, X3 ===");
     subs_xform(&s, X4, X2, X3);
 
-    print_val_gpr_to_hex(&s, X4);
+    print_val_gpr_to_unsigned_hex(&s, X4);
     print_nzcv(&s);
 
 

@@ -17,7 +17,7 @@ int main(void)
     puts("=== BICS X3, X1, X2 ===");
     bics_xform(&s, X3, X1, X2);
 
-    print_val_gpr_to_hex(&s, X3);
+    print_val_gpr_to_unsigned_hex(&s, X3);
     print_nzcv(&s);
 
     /* Scenario 2: zero result */
@@ -34,7 +34,7 @@ int main(void)
     puts("\n=== BICS X7, X5, X6 ===");
     bics_xform(&s, X7, X5, X6);
 
-    print_val_gpr_to_hex(&s, X7);
+    print_val_gpr_to_unsigned_hex(&s, X7);
     print_nzcv(&s);
 
     return 0;

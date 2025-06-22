@@ -11,7 +11,8 @@
 
 int main(void)
 {
-    a64rf_state_t s = initialize_a64rf_state();
+    a64rf_state_t s = {0};
+    initialize_a64rf_state(&s);
 
     write_val_gpr(&s, X0, (uint64_t)1);
     write_val_gpr(&s, X1, (uint64_t)1);
@@ -23,7 +24,7 @@ int main(void)
 
 
     add_xform(&s, X2, X0, X1);
-    print_val_gpr(&s, X2, NULL);
+    print_val_gpr_to_unsigned_hex(&s, X2);
 
     add_dform(&s, V2, V0, V1);
     print_vreg_as_2d(&s, V2);

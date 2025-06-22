@@ -26,7 +26,8 @@ static inline uint64_t read_val_gpr(const a64rf_state_t* state, a64rf_gpr_idx_t 
 typedef enum {
     RADIX_HEX = 0,
     RADIX_DEC,
-    RADIX_BIN
+    RADIX_BIN,
+    RADIX_OCT
 } radix_t;
 
 static inline void print_bin64(uint64_t v)
@@ -42,8 +43,9 @@ void print_val_gpr(const a64rf_state_t *state,
 {
     uint64_t raw = read_val_gpr(state, gpr_idx);
 
-    /* 預設：HEX + unsigned */
-    if (radix > RADIX_BIN) radix = RADIX_HEX;
+    /* 合法區段檢查 ── 超出範圍就預設 HEX */
+    if (radix < RADIX_HEX || radix > RADIX_OCT)
+        radix = RADIX_HEX;
 
     switch (radix) {
     case RADIX_DEC:
@@ -59,6 +61,15 @@ void print_val_gpr(const a64rf_state_t *state,
         putchar('\n');
         break;
 
+    case RADIX_OCT:
+        if (is_signed)
+            printf("X%d = 0o%022" PRIo64 "  /* %" PRIi64 " */\n",
+                   (int)gpr_idx, raw, (int64_t)raw);
+        else
+            printf("X%d = 0o%022" PRIo64 "\n",
+                   (int)gpr_idx, raw);
+        break;
+
     case RADIX_HEX:
     default:
         if (is_signed)
@@ -69,6 +80,7 @@ void print_val_gpr(const a64rf_state_t *state,
         break;
     }
 }
+
 
 /*
  * Convenience wrapper to print a register value in hexadecimal.

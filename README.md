@@ -15,6 +15,8 @@
 
 ## 📌 Quick Start
 
+### 1. Emulator Example
+
 Clone the repository and run examples:
 
 ```bash
@@ -49,6 +51,51 @@ NZCV = N:1 Z:0 C:1 V:0
 
 === PERFORM SUBS XZR, X2, X2 ===
 NZCV = N:0 Z:1 C:1 V:0
+```
+
+### 2. Assembly Snapshot Example
+
+Define macro for large immediate move:
+
+```assembly
+#define movbig(nn,n3,n2,n1,n0)        \
+        movz    nn, n0                \
+        movk    nn, n1, lsl #16       \
+        movk    nn, n2, lsl #32       \
+        movk    nn, n3, lsl #48
+```
+
+Insert snapshot macros into assembly code:
+
+```assembly
+#ifdef A64RF_TRACE
+    SNAP_REGS 2, 1               /* Snapshot before modification */
+#endif
+    movbig(x10, 0xa0f9, 0x9e23, 0x7502, 0x2099)
+    movbig(x11, 0xa8c6, 0x8f3f, 0x1d13, 0x2595)
+    movbig(x12, 0x6c6c, 0x8938, 0x05ac, 0x5242)
+    movbig(x13, 0x2765, 0x08b2, 0x4177, 0x0615)
+#ifdef A64RF_TRACE
+    SNAP_REGS 3, 1               /* Snapshot after modification */
+#endif
+```
+
+Sample Snapshot Output:
+
+```
+[S2 A]
+X10 = 0x0000000000000002
+X11 = 0x0000010000000000
+X12 = 0x00000000fffffffd
+X13 = 0x0000000000000000
+...
+
+[S3 A]
+X10 = 0xa0f99e2375022099
+X11 = 0xa8c68f3f1d132595
+X12 = 0x6c6c893805ac5242
+X13 = 0x276508b241770615
+...
 ```
 
 > ⚠️ **Note:** Automated testing is not yet fully implemented; current testing relies on manual verification.

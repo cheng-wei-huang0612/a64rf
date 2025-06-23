@@ -136,9 +136,10 @@ Formal contribution guidelines are not yet available, but your help is highly ap
 
 ---
 
-## 📄 Licensing
+## License
 
-A license for this project has not yet been determined. If you have recommendations or preferences, please get in touch!
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
 
 ---
 

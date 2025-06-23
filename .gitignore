@@ -12,3 +12,4 @@ example
 driver
 main
 inv25519
+*.DS_Store

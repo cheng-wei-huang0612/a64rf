@@ -1,5 +1,9 @@
-# 🚀 **A64RF: ARMv8-A Register Playground**
 
+<p align="center">
+    <img src="images/darklogo.png" width="500" alt="A64RF Logo">
+</p>
+
+# 🚀 **A64RF: ARMv8-A Register Playground**
 **A64RF** is a minimal and experimental framework for quickly emulating ARM64 instructions and inspecting CPU register state snapshots. Designed for developers and researchers interested in low-level ARMv8-A assembly programming, debugging, and performance analysis.
 
 ---

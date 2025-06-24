@@ -142,25 +142,34 @@ typedef struct
 } pc_t;
 
 
+typedef uint64_t a64rf_addr_t;
 
 
-#define STACK_SIZE (1 * 1024)
-#define MEMORY_SIZE (1 * 1024)
+
+
+#define DEFAULT_STACK_SZ (1 * 1024)
+#define DEFAULT_MEM_SZ (1 * 1024)
 
 
 
 typedef struct {
     gpr_t    gpr[GPR_COUNT];
     vreg_t   vreg[VREG_COUNT];
+    
     sp_t     sp;
 
-    uint8_t  stack[STACK_SIZE];
-    uint8_t  memory[MEMORY_SIZE];
+    uint8_t *stack;
+    size_t   stack_size;
+
+    uint8_t *memory;
+    size_t   mem_size;
+    size_t   mem_cnt;
 
     pc_t     pc;
 
-    nzcv_t   nzcv;   /* PSTATE.NZCV               */
-    fpsr_t   fpsr;   /* FPSR.QC (飽和累積旗標)     */
+    nzcv_t   nzcv;
+    fpsr_t   fpsr;
+    uint64_t magic;
 } a64rf_state_t;
 
 /* 已有 enum，若想去掉前綴也可改成 SHIFT_LSL… */

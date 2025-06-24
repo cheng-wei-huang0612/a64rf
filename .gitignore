@@ -13,3 +13,4 @@ driver
 main
 inv25519
 *.DS_Store
+tests/example009

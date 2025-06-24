@@ -1,6 +1,7 @@
 /* a64rf_op.h */
 #pragma once
 #include "../../types.h"
+#include "../api/mem.h"
 
 #include <stdbool.h>
 #include <string.h>
@@ -38,7 +39,7 @@ static inline void set_flags_logical(uint64_t res, nzcv_t *f)
 
 
 
-
+/* compile to: mul Xd, Xn, Xm */
 static inline void mul_xform(a64rf_state_t *s,
                              const a64rf_gpr_idx_t Xd, 
                              const a64rf_gpr_idx_t Xn, 
@@ -207,8 +208,7 @@ static inline void add_xform_imm(a64rf_state_t *s,
 
 
 
-
-
+/* compile to: add Xd, Xn, Xm */
 static inline void add_xform(a64rf_state_t *s,
                               const a64rf_gpr_idx_t Xd,
                               const a64rf_gpr_idx_t Xn,
@@ -614,6 +614,57 @@ static inline void orr_xform(a64rf_state_t *s,
 
     write_val_gpr(s, Xd, result);
 }
+
+
+static inline void ldr_xform(a64rf_state_t *s,
+                             a64rf_gpr_idx_t Xd,
+                             a64rf_gpr_idx_t Xn)
+{
+
+    uint64_t base   = read_val_gpr(s, Xn);
+
+    uint64_t gaddr  = base;
+    uint64_t data   = 0;
+    if (base & 7) {
+        fprintf(stderr, "unaligned LDR @ 0x%llx\n", (unsigned long long)base);
+        abort();
+    }
+    if (read_mem_64(s, gaddr, &data) != 0) {     /* Data Abort */
+        fprintf(stderr, "LDR abort @ 0x%llx\n", (unsigned long long)gaddr);
+        abort();
+    }
+    write_val_gpr(s, Xd, data);
+}
+
+static inline void str_xform(a64rf_state_t *s,
+                             a64rf_gpr_idx_t Xd,   /* 要寫出的資料來源暫存器 */
+                             a64rf_gpr_idx_t Xn)   /* 基底位址暫存器       */
+{
+    /* 如果你還沒全面鋪 CHECK_INIT，這裡先不加；要加也只需一行 */
+    /* CHECK_INIT(s); */
+
+    uint64_t base  = read_val_gpr(s, Xn);          /* 目標 guest address */
+    uint64_t data  = read_val_gpr(s, Xd);          /* 欲寫入的 64-bit 數值 */
+
+    /* 8-byte alignment 檢查（符合 A64 規格；要寬鬆可刪） */
+    if (base & 7) {
+        fprintf(stderr, "unaligned STR @ 0x%llx\n",
+                (unsigned long long)base);
+        abort();
+    }
+
+    /* 寫入；若超出 guest memory 範圍則視為 data abort */
+    if (write_mem_64(s, base, data) != 0) {
+        fprintf(stderr, "STR abort @ 0x%llx\n",
+                (unsigned long long)base);
+        abort();
+    }
+}
+
+
+
+
+
 
 void branch(a64rf_program_t *program, a64rf_label_t label)
 {

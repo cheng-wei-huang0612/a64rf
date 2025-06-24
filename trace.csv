@@ -1,0 +1,5 @@
+Instruction,X0,X1,X2
+"mov X0, #3",3,,
+"mov X1, #5",3,5,
+"add X2, X0, X1",3,5,8
+

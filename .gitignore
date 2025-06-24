@@ -13,6 +13,10 @@ driver
 main
 inv25519
 *.DS_Store
+
 demo
 
 write_csv_demo
+
+tests/example009
+

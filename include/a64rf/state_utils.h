@@ -14,7 +14,7 @@ void wipe(void *p, size_t n) {
 
 #define A64RF_MAGIC 27183
 
-int a64rf_init(a64rf_state_t *s, size_t stack_sz, size_t mem_sz) {
+int a64rf_state_init(a64rf_state_t *s, size_t stack_sz, size_t mem_sz) {
     if (!s) return -1; 
 
     memset(s, 0, sizeof *s);

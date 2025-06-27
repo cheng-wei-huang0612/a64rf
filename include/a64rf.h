@@ -23,6 +23,7 @@ extern "C" {
 
 #include "a64rf/state_utils.h"
 #include "a64rf/program.h"
+#include "a64rf/run_program.h"
 
 
 /* --------------------------------------------------------------------------
@@ -34,7 +35,8 @@ extern "C" {
 #include "a64rf/api/vreg/print.h"
 #include "a64rf/api/vreg/write.h"
 
-
+#include "a64rf/api/state.h"
+#include "a64rf/api/mem.h"
 
 
 

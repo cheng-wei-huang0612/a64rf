@@ -3,6 +3,7 @@
 #include "a64rf_dump.h"
 #include "a64rf/api/state.h"
 
+
 /* -------------------------------------------------------------
  *  公用列印工具：
  *      a64rf_dump_regs()       – 無序號版本（維持舊介面）
@@ -101,6 +102,8 @@ static void buf_to_state(const uint8_t *b, a64rf_state_t *s)
     for (int i = 0; i < 31; ++i)     s->gpr[i].val = q[i];
     s->nzcv.word = (uint32_t)q[31];
 
+    
+
     /* (2) VREG */
     memcpy(s->vreg, b + SNAP_GPR_SZ, SNAP_VREG_SZ);
 
@@ -120,6 +123,9 @@ void a64rf_snapshot_dump(const void *buf,
     printf("print whole state\n\n");
     a64rf_state_t snap = {0};
     buf_to_state(buf, &snap);
+
+
+
 
     /* 你自己的列印函式：可依 lane_bits 決定 VREG 8/16/32/64  */
     print_all_regs_and_flags(&snap);

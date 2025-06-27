@@ -41,10 +41,18 @@ typedef enum a64rf_gpr_idx {
 /* Representation of the NZCV condition flags used by the AArch64 ISA.  The
  * structure view allows bitfield access while 'word' exposes the raw value. */
 typedef union {
-    struct { unsigned V:1, C:1, Z:1, N:1; };
+    struct {
+        /* 先吃掉低 28 bits，讓接下來四個旗標剛好落在 31‥28 */
+        uint32_t _pad : 28;
+
+        /* 依 ARMv8-A PSTATE bit 位置排列，最高位在最前 */
+        uint32_t V    : 1;   // bit 28
+        uint32_t C    : 1;   // bit 29
+        uint32_t Z    : 1;   // bit 30
+        uint32_t N    : 1;   // bit 31
+    };
     uint32_t word;
 } nzcv_t;
-
 /*
  * Metadata for a single general purpose register.  'val' holds the current
  * 64-bit contents while 'last_writer_pc' and 'access_cnt' provide light-weight
@@ -179,6 +187,27 @@ typedef enum {
     A64_SHIFT_ASR = 2,
     A64_SHIFT_ROR = 3
 } a64_shift_type_t;
+
+typedef enum {
+    EQ = 0,   // Equal
+    NE,       // Not equal
+    CS,       // Carry set (HS)
+    CC,       // Carry clear (LO)
+    MI,       // Minus, negative
+    PL,       // Plus, positive or zero
+    VS,       // Overflow
+    VC,       // No overflow
+    HI,       // Unsigned higher
+    LS,       // Unsigned lower or same
+    GE,       // Signed greater than or equal
+    LT,       // Signed less than
+    GT,       // Signed greater than
+    LE,       // Signed less than or equal
+    AL,       // Always (unconditional)
+    NV        
+} a64rf_cond_t;
+
+
 
 typedef enum {
     OP_NULL = 0,

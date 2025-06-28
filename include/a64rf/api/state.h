@@ -52,9 +52,9 @@ static inline void print_all_regs_and_flags(a64rf_state_t *state)
 static inline void print_stack(a64rf_state_t *state)
 {
     printf("SP  = 0x%016" PRIxPTR "\n", state->sp.val);
-    for (size_t i = 0; i < STACK_SIZE; i += 16) {
+    for (size_t i = 0; i < DEFAULT_STACK_SZ; i += 16) {
         printf("stack[%04zu]:", i);
-        for (size_t j = 0; j < 16 && i + j < STACK_SIZE; ++j)
+        for (size_t j = 0; j < 16 && i + j < DEFAULT_STACK_SZ; ++j)
             printf(" %02" PRIx8, state->stack[i + j]);
         putchar('\n');
     }
@@ -63,9 +63,9 @@ static inline void print_stack(a64rf_state_t *state)
 /* Dump the entire memory array. */
 static inline void print_memory(a64rf_state_t *state)
 {
-    for (size_t i = 0; i < MEMORY_SIZE; i += 16) {
+    for (size_t i = 0; i < DEFAULT_MEM_SZ; i += 16) {
         printf("memory[%04zu]:", i);
-        for (size_t j = 0; j < 16 && i + j < MEMORY_SIZE; ++j)
+        for (size_t j = 0; j < 16 && i + j < DEFAULT_MEM_SZ; ++j)
             printf(" %02" PRIx8, state->memory[i + j]);
         putchar('\n');
     }

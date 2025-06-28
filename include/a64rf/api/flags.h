@@ -28,10 +28,7 @@ static inline void write_nzcv(a64rf_state_t *state, nzcv_t src_flag) {
 
 static inline void write_zero_nzcv(a64rf_state_t *state) {
     nzcv_t src_flag;
-    src_flag.N = 0;
-    src_flag.Z = 0;
-    src_flag.C = 0;
-    src_flag.V = 0;
+    src_flag.word = (uint32_t)0;
 
     write_nzcv(state, src_flag);
 }

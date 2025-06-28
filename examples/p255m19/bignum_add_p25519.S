@@ -52,19 +52,19 @@ S2N_BN_SYMBOL(bignum_add_p25519):
 // Form [c3; c2; c1; c0] = (x + y) + (2^255 + 19), with CF for the comparison
 
         mov     c3, #0x8000000000000000
-        adds    c0, d0, #19
-        adcs    c1, d1, xzr
-        adcs    c2, d2, xzr
-        adcs    c3, d3, c3
+adds X7, X3, #19
+adcs X8, X4, X31
+adcs X9, X5, X31
+adcs X10, X6, X10
 
 // If the comparison holds, select [c3; c2; c1; c0]. There's no need to mask
 // it since in this case it is ((x + y) + (2^255 + 19)) - 2^256 because the
 // top carry is lost, which is the desired (x + y) - (2^255 - 19).
 
-        csel    d0, d0, c0, cc
-        csel    d1, d1, c1, cc
-        csel    d2, d2, c2, cc
-        csel    d3, d3, c3, cc
+csel X3, X3, X7, cc
+csel X4, X4, X8, cc
+csel X5, X5, X9, cc
+csel X6, X6, X10, cc
 #ifdef A64RF_TRACE
         SNAP_STATE 0, 1               /* idx=0, side=1 (Asm) */
 #endif

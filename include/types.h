@@ -207,7 +207,24 @@ typedef enum {
     NV        
 } a64rf_cond_t;
 
+static inline const char *
+cond2str(a64rf_cond_t cond)
+{
+    /* 與 enum 定義順序一一對應 ── 必須保持同步！           */
+    static const char *const tbl[] = {
+        [EQ] = "eq",  [NE] = "ne",
+        [CS] = "cs",  [CC] = "cc",
+        [MI] = "mi",  [PL] = "pl",
+        [VS] = "vs",  [VC] = "vc",
+        [HI] = "hi",  [LS] = "ls",
+        [GE] = "ge",  [LT] = "lt",
+        [GT] = "gt",  [LE] = "le",
+        [AL] = "al",  [NV] = "nv"
+    };
 
+    /* 越界保護：若傳進來的值不在合法範圍，就回傳 "??"。 */
+    return (cond >= EQ && cond <= NV) ? tbl[cond] : "??";
+}
 
 typedef enum {
     OP_NULL = 0,

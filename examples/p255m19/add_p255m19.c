@@ -1,3 +1,10 @@
+
+
+#define A64RF_PRINT_ASM
+#define A64RF_OUTPUT_PATH "my_bignum_add_p25519.S"
+#define A64RF_OUTPUT_GLABEL bignum_add_p25519
+
+
 #include "a64rf.h"
 
 extern void bignum_add_p25519(uint64_t z[static 4], const uint64_t x[static 4], const uint64_t y[static 4]);
@@ -13,6 +20,10 @@ extern uint64_t y[4];
 #define c1 X8
 #define c2 X9
 #define c3 X10
+
+
+
+
 
 int main(void)
 {
@@ -38,6 +49,8 @@ int main(void)
     write_mem_64(&s, y_ptr+24, y[3]);
     
     a64rf_addr_t z_ptr = alloc_mem(&s, 32, 8);
+
+    print_memory(&s);
     
     
     write_val_gpr(&s, X0, z_ptr);
@@ -71,7 +84,7 @@ int main(void)
     csel_xd_xn_xm(&s, d3, d3, c3, CC);
     
     
-    stp_xt1_xt2_xn_imm(&s, d0, d1, X0, 0);
+    stp_xt1_xt2_xn(&s, d0, d1, X0);
     stp_xt1_xt2_xn_imm(&s, d2, d3, X0, 16);
     print_all_regs_and_flags(&s);
     

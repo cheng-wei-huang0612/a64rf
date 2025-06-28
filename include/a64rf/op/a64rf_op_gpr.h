@@ -37,24 +37,55 @@ static inline void set_flags_logical(uint64_t res, nzcv_t *f)
 
 
 
+/* 
+compile to: madd Xd, Xn, Xm, Xa
+action: Xd <- Xn * Xm + Xa (mod 2^64)
+ref: a-profile C6-2100
+*/
+static inline void madd_xd_xn_xm_xa(a64rf_state_t *s,
+                             const a64rf_gpr_idx_t Xd, 
+                             const a64rf_gpr_idx_t Xn, 
+                             const a64rf_gpr_idx_t Xm,
+                             const a64rf_gpr_idx_t Xa)
+{
+    uint64_t operand1 = read_val_gpr(s, Xn);
+    uint64_t operand2 = read_val_gpr(s, Xm);
+    uint64_t operand3 = read_val_gpr(s, Xa);
+
+    uint64_t result = operand3 + (operand1 * operand2);
+
+    write_val_gpr(s, Xd, result);
+    A64RF_EMIT_ASM("madd x%d, x%d, x%d, x%d", Xd, Xn, Xm, Xa);
+}
 
 
-/* compile to: mul Xd, Xn, Xm */
-static inline void mul_xform(a64rf_state_t *s,
+/* 
+compile to: mul Xd, Xn, Xm 
+action: Xd <- Xn * Xm (mod 2^64)
+ref: a-profile C6-2126
+alias of madd
+*/
+static inline void mul_xd_xn_xm(a64rf_state_t *s,
                              const a64rf_gpr_idx_t Xd, 
                              const a64rf_gpr_idx_t Xn, 
                              const a64rf_gpr_idx_t Xm)
 {
-    uint64_t src_n = read_val_gpr(s, Xn);
-    uint64_t src_m = read_val_gpr(s, Xm);
+    // alias of madd
+    uint64_t operand1 = read_val_gpr(s, Xn);
+    uint64_t operand2 = read_val_gpr(s, Xm);
+    uint64_t operand3 = read_val_gpr(s, XZR);
 
-    uint64_t result = src_n * src_m;
+    uint64_t result = operand3 + (operand1 * operand2);
 
     write_val_gpr(s, Xd, result);
+
+    A64RF_EMIT_ASM("mul x%d, x%d, x%d", Xd, Xn, Xm);
 }
 
+// legacy name
+#define mul_xform mul_xd_xn_xm
 
-void mul_xd_xn_xm(a64rf_program_t *program, a64rf_gpr_idx_t dst, a64rf_gpr_idx_t src0, a64rf_gpr_idx_t src1) 
+void mul_xd_xn_xm_p(a64rf_program_t *program, a64rf_gpr_idx_t dst, a64rf_gpr_idx_t src0, a64rf_gpr_idx_t src1) 
 {
     a64rf_instruction_t instruction;
     instruction.op = OP_MUL;
@@ -316,6 +347,7 @@ static inline void adds_xd_xn_xm(a64rf_state_t *s,
 
     s->nzcv = flags;
     write_val_gpr(s, Xd, result);
+    A64RF_EMIT_ASM("adds X%d, X%d, X%d\n", Xd, Xn, Xm);
 }
 
 // legacy name
@@ -362,7 +394,27 @@ static inline void adds_xd_xn_imm(a64rf_state_t *s,
                               const a64rf_gpr_idx_t Xn,
                               const uint32_t imm12)
 {
-    adds_xd_xn_imm_shift(s, Xd, Xn, imm12, 0);
+    uint32_t shift = 0;
+    if (imm12 > 0xFFFu) {
+        fprintf(stderr, "adds_xd_xn_xm: imm12 0x%X out of 12-bit range\n", imm12);
+        return;
+    }
+    if (shift != 0 && shift != 12) {
+        fprintf(stderr, "adds_xd_xn_xm: shift must be either 0 or 12, got %u\n", shift);
+        return;
+    }
+
+    uint64_t imm = imm12 << shift;
+
+    uint64_t operand1 = read_val_gpr(s, Xn);
+    uint64_t operand2 = imm;
+
+    nzcv_t   flags = {0};
+    uint64_t result = add_with_carry_u64(operand1, operand2, /*carry_in=*/0, &flags);
+
+    s->nzcv = flags;
+    write_val_gpr(s, Xd, result);
+    A64RF_EMIT_ASM("adds X%d, X%d, #%d\n", Xd, Xn, imm12);
 }
 
 
@@ -385,6 +437,7 @@ static inline void adcs_xd_xn_xm(a64rf_state_t *s,
 
     s->nzcv = flags;
     write_val_gpr(s, Xd, result);
+    A64RF_EMIT_ASM("adcs X%d, X%d, X%d\n", Xd, Xn, Xm);
 }
 
 /*
@@ -404,6 +457,7 @@ static inline void adc_xd_xn_xm(a64rf_state_t *s,
     uint64_t result = add_with_carry_u64(src_n, src_m, s->nzcv.C, &dummy_flags);
 
     write_val_gpr(s, Xd, result);
+    A64RF_EMIT_ASM("adc X%d, X%d, X%d\n", Xd, Xn, Xm);
 }
 
 
@@ -768,6 +822,7 @@ static inline void movz_xd_imm_lsl_shift(a64rf_state_t *s,
     }
     uint64_t value = ((uint64_t)imm16) << shift;
     write_val_gpr(s, Xd, value);
+    A64RF_EMIT_ASM("movz X%d, #%d\n", Xd, imm16);
 }
 
 
@@ -824,6 +879,7 @@ static inline void csel_xd_xn_xm(a64rf_state_t *s,
     }
 
     write_val_gpr(s, Xd, result);
+    A64RF_EMIT_ASM("csel x%d, x%d, x%d, %s\n", Xd, Xn, Xm, cond2str(cond));
 }
 
 
@@ -903,6 +959,7 @@ ldp_xt1_xt2_xn(a64rf_state_t        *s,
      *------------------------------------------------------------*/
     write_val_gpr(s, Xt1, lo);
     write_val_gpr(s, Xt2, hi);
+    A64RF_EMIT_ASM("ldp X%d, X%d, [X%d]\n", Xt1, Xt2, Xn);
 }
 
 
@@ -964,6 +1021,7 @@ ldp_xt1_xt2_xn_imm(a64rf_state_t        *s,
      *------------------------------------------------------------*/
     write_val_gpr(s, Xt1, lo);
     write_val_gpr(s, Xt2, hi);
+    A64RF_EMIT_ASM("ldp X%d, X%d, [X%d, #%d]\n", Xt1, Xt2, Xn, imm);
 }
 
 
@@ -994,7 +1052,6 @@ static inline void str_xform(a64rf_state_t *s,
         abort();
     }
 }
-
 /*---------------------------------------------------------------
  *  compile to:     stp Xt1, Xt2, [Xn, #imm]
  *  ref:  Arm ARM A-profile (C6-2332), STP
@@ -1052,6 +1109,61 @@ stp_xt1_xt2_xn_imm(a64rf_state_t        *s,
                 (unsigned long long)addr);
         abort();
     }
+    A64RF_EMIT_ASM("stp X%d, X%d, [X%d, #%d]\n", Xt1, Xt2, Xn, imm);
+
+}
+
+
+/*---------------------------------------------------------------
+ *  compile to:     stp Xt1, Xt2, [Xn, #imm]
+ *  ref:  Arm ARM A-profile (C6-2332), STP
+ *----------------------------------------------------------------
+ *  - [base + imm]     ← Xt1   (little-endian: low address ← Xt1)
+ *  - [base + imm + 8] ← Xt2
+ *
+ *  *imm 必須為 8 的倍數，且範圍通常在 ±504 之內
+ *----------------------------------------------------------------*/
+static inline void
+stp_xt1_xt2_xn(a64rf_state_t        *s,
+                   a64rf_gpr_idx_t       Xt1,
+                   a64rf_gpr_idx_t       Xt2,
+                   a64rf_gpr_idx_t       Xn)   /* byte offset */
+{
+
+
+    /*------------------------------------------------------------*
+     *  2. 計算實際位址                                           *
+     *------------------------------------------------------------*/
+    uint64_t base = read_val_gpr(s, Xn);
+    uint64_t addr = base;  /* sign-extended add */
+
+    /*------------------------------------------------------------*
+     *  3. Alignment check (8-byte)                               *
+     *------------------------------------------------------------*/
+    if (addr & 7) {
+        fprintf(stderr,
+                "unaligned STP @ 0x%llx\n",
+                (unsigned long long)addr);
+        abort();
+    }
+
+    /*------------------------------------------------------------*
+     *  4. 取得待寫入資料                                         *
+     *------------------------------------------------------------*/
+    uint64_t lo = read_val_gpr(s, Xt1);
+    uint64_t hi = read_val_gpr(s, Xt2);
+
+    /*------------------------------------------------------------*
+     *  5. 寫入 2×64-bit                                          *
+     *------------------------------------------------------------*/
+    if (write_mem_64(s, addr,     lo) != 0 ||   /* Data abort? */
+        write_mem_64(s, addr + 8, hi) != 0) {
+        fprintf(stderr,
+                "STP abort @ 0x%llx\n",
+                (unsigned long long)addr);
+        abort();
+    }
+    A64RF_EMIT_ASM("stp X%d, X%d, [X%d]\n", Xt1, Xt2, Xn);
 }
 
 

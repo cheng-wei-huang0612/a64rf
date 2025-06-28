@@ -6,6 +6,9 @@
 #include <stdbool.h>
 #include <string.h>
 
+//#define A64RF_PROGRAM_PREFIX(x) (x)_p
+
+
 /*--------------------------------------------------------------------
  *  add_with_carry_u64()
  *  ─ 依 Arm A64《AddWithCarry》偽碼，計算 result 及 NZCV。
@@ -103,6 +106,109 @@ void mul_xd_xn_xm_p(a64rf_program_t *program, a64rf_gpr_idx_t dst, a64rf_gpr_idx
     program->add_instruction_to_program = increment_pc(program->add_instruction_to_program);
 }
 
+
+
+static inline uint64_t mul_hi64_soft(uint64_t a, uint64_t b)
+{
+    /* 純 C (ANSI C89) 32×32→64 分乘作後備 */
+    const uint64_t MASK32 = 0xffffffffULL;
+    uint64_t a_lo = a & MASK32, a_hi = a >> 32;
+    uint64_t b_lo = b & MASK32, b_hi = b >> 32;
+
+    uint64_t p0 = a_lo * b_lo;
+    uint64_t p1 = a_lo * b_hi;
+    uint64_t p2 = a_hi * b_lo;
+    uint64_t p3 = a_hi * b_hi;
+
+    uint64_t carry = (p0 >> 32) + (p1 & MASK32) + (p2 & MASK32);
+    return p3 + (p1 >> 32) + (p2 >> 32) + (carry >> 32);
+}
+
+
+/* 
+compile to: umulh Xd, Xn, Xm 
+action: Xd <- ((uint)Xn * (uint)Xm) >> 64 (mod 2^64)
+ref: a-profile C6-2126
+*/
+static inline void
+umulh_xd_xn_xm(a64rf_state_t *s,
+               a64rf_gpr_idx_t Xd,
+               a64rf_gpr_idx_t Xn,
+               a64rf_gpr_idx_t Xm)
+{
+    uint64_t a = read_val_gpr(s, Xn);
+    uint64_t b = read_val_gpr(s, Xm);
+    uint64_t hi;
+
+#if defined(__SIZEOF_INT128__)                /* GCC / Clang / ICC… */
+    hi = (uint64_t)(((__uint128_t)a * b) >> 64);
+
+#elif defined(_MSC_VER) && defined(_M_X64)    /* MSVC x64 */
+    _umul128(a, b, &hi);
+
+#else                                         /* 純 C 32×32→64 分乘 */
+    const uint64_t M32 = 0xFFFFFFFFULL;
+    uint64_t a0 = a & M32, a1 = a >> 32;
+    uint64_t b0 = b & M32, b1 = b >> 32;
+
+    uint64_t p0 = a0 * b0;
+    uint64_t p1 = a0 * b1;
+    uint64_t p2 = a1 * b0;
+    uint64_t p3 = a1 * b1;
+
+    uint64_t carry = (p0 >> 32) + (p1 & M32) + (p2 & M32);
+    hi = p3 + (p1 >> 32) + (p2 >> 32) + (carry >> 32);
+#endif
+
+    write_val_gpr(s, Xd, hi);
+    A64RF_EMIT_ASM("umulh x%d, x%d, x%d", Xd, Xn, Xm);   /* trace */
+}
+
+/* 
+compile to: smulh Xd, Xn, Xm 
+action: Xd <- ((int)Xn * (int)Xm) >> 64 (mod 2^64)
+ref: a-profile C6-2281
+*/
+static inline void
+smulh_xd_xn_xm(a64rf_state_t *s,
+               a64rf_gpr_idx_t Xd,
+               a64rf_gpr_idx_t Xn,
+               a64rf_gpr_idx_t Xm)
+{
+    int64_t a = (int64_t)read_val_gpr(s, Xn);
+    int64_t b = (int64_t)read_val_gpr(s, Xm);
+    int64_t hi;
+
+#if defined(__SIZEOF_INT128__)
+    hi = (int64_t)(((__int128)a * (__int128)b) >> 64);
+
+#elif defined(_MSC_VER) && defined(_M_X64)
+    _mul128(a, b, &hi);      /* lo 丟掉 */
+
+#else
+    /* 絕對值 → 做無號乘 → 視需要取負 */
+    uint64_t ua = (a < 0) ? (uint64_t)(-a) : (uint64_t)a;
+    uint64_t ub = (b < 0) ? (uint64_t)(-b) : (uint64_t)b;
+
+    /* 重用前面 32×32→64 分乘程式碼（直接內嵌） */
+    const uint64_t M32 = 0xFFFFFFFFULL;
+    uint64_t a0 = ua & M32, a1 = ua >> 32;
+    uint64_t b0 = ub & M32, b1 = ub >> 32;
+
+    uint64_t p0 = a0 * b0;
+    uint64_t p1 = a0 * b1;
+    uint64_t p2 = a1 * b0;
+    uint64_t p3 = a1 * b1;
+
+    uint64_t carry = (p0 >> 32) + (p1 & M32) + (p2 & M32);
+    uint64_t hi_u  = p3 + (p1 >> 32) + (p2 >> 32) + (carry >> 32);
+
+    hi = ((a ^ b) < 0) ? -(int64_t)hi_u : (int64_t)hi_u;
+#endif
+
+    write_val_gpr(s, Xd, (uint64_t)hi);
+    A64RF_EMIT_ASM("smulh x%d, x%d, x%d", Xd, Xn, Xm);   /* trace */
+}
 
 static inline bool validate_add_imm_shift(uint32_t imm, unsigned shift,
                        const char *func_name)

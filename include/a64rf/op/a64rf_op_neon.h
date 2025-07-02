@@ -439,6 +439,268 @@ static inline void smull2_vd2d_vn4s_vm4s(a64rf_state_t *s,
     write_all_d_vreg(s, Vd, results);
 }
 
+/*
+compile to: smull Vd.2d, Vn.2s, Vm.s[index]
+action: sign extend the first 2 s elements of Vn and Vm to d size, and
+then signed multiply them
+ref: a-profile: C7-3103
+*/
+static inline void smull_vd2d_vn2s_vms_lane(a64rf_state_t *s,
+                                        const a64rf_vreg_idx_t Vd,
+                                        const a64rf_vreg_idx_t Vn,
+                                        const a64rf_vreg_idx_t Vm,
+                                        const int lane)
+{
+    // check if lane is applicable
+
+
+    uint8_t elements = 2;
+    uint32_t operand1[VREG_S_LANE_COUNT];
+    uint32_t operand2[VREG_S_LANE_COUNT];
+    uint64_t results[VREG_D_LANE_COUNT];
+    
+    
+    read_all_s_vreg(s, Vn, operand1);
+    read_all_s_vreg(s, Vm, operand2);
+
+    int64_t element2 = (int64_t)(int32_t)operand2[lane];
+    
+    for (size_t e = 0; e < elements; e++)
+    {
+        int64_t element1 = (int64_t)(int32_t)operand1[e];
+        int64_t result = element1 * element2;
+        results[e] = (uint64_t)(int64_t) result;
+    }
+
+    write_all_d_vreg(s, Vd, results);    
+}
+
+/*
+compile to: smull2 Vd.2d, Vn.4s, Vm.s[index]
+action: sign extend the upper 2 s elements of Vn and Vm to d size, and
+then signed multiply them
+ref: a-profile: C7-3103
+*/
+static inline void smull2_vd2d_vn4s_vms_lane(a64rf_state_t *s,
+                                        const a64rf_vreg_idx_t Vd,
+                                        const a64rf_vreg_idx_t Vn,
+                                        const a64rf_vreg_idx_t Vm,
+                                        const int lane)
+{
+    // check if lane is applicable
+
+
+    uint8_t elements = 2;
+    uint32_t operand1[VREG_S_LANE_COUNT];
+    uint32_t operand2[VREG_S_LANE_COUNT];
+    uint64_t results[VREG_D_LANE_COUNT];
+    
+    
+    read_all_s_vreg(s, Vn, operand1);
+    read_all_s_vreg(s, Vm, operand2);
+
+    int64_t element2 = (int64_t)(int32_t)operand2[lane];
+    
+    for (size_t e = 0; e < elements; e++)
+    {
+        int64_t element1 = (int64_t)(int32_t)operand1[e + elements];
+        int64_t result = element1 * element2;
+        results[e] = (uint64_t)(int64_t) result;
+    }
+
+    write_all_d_vreg(s, Vd, results);    
+}
+
+
+/*
+compile to: smlal Vd.2d, Vn.2s, Vm.s[index]
+action: sign extend the first 2 s elements of Vn and Vm to d size, and
+then signed multiply them accumulate to the 2 d elements of Vd
+ref: a-profile: C7-3089
+*/
+static inline void smlal_vd2d_vn2s_vms_lane(a64rf_state_t *s,
+                                        const a64rf_vreg_idx_t Vd,
+                                        const a64rf_vreg_idx_t Vn,
+                                        const a64rf_vreg_idx_t Vm,
+                                        const int lane)
+{
+    // check if lane is applicable
+
+
+    uint8_t elements = 2;
+    uint32_t operand1[VREG_S_LANE_COUNT];
+    uint32_t operand2[VREG_S_LANE_COUNT];
+    uint64_t operand3[VREG_D_LANE_COUNT];
+    uint64_t results[VREG_D_LANE_COUNT];
+    
+    
+    read_all_s_vreg(s, Vn, operand1);
+    read_all_s_vreg(s, Vm, operand2);
+    read_all_d_vreg(s, Vd, operand3);
+
+    int64_t element2 = (int64_t)(int32_t)operand2[lane];
+    
+    for (size_t e = 0; e < elements; e++)
+    {
+        int64_t element1 = (int64_t)(int32_t)operand1[e];
+        int64_t element3 = (int64_t)(int64_t)operand3[e];
+        int64_t product = element1 * element2;
+        int64_t result = element3 + product;
+        results[e] = (uint64_t)(int64_t) result;
+    }
+
+    write_all_d_vreg(s, Vd, results);    
+}
+
+/*
+compile to: smlal2 Vd.2d, Vn.4s, Vm.s[index]
+action: sign extend the last 2 s elements of Vn and Vm to d size, and
+then signed multiply them accumulate to the 2 d elements of Vd
+ref: a-profile: C7-3089
+*/
+static inline void smlal2_vd2d_vn4s_vms_lane(a64rf_state_t *s,
+                                        const a64rf_vreg_idx_t Vd,
+                                        const a64rf_vreg_idx_t Vn,
+                                        const a64rf_vreg_idx_t Vm,
+                                        const int lane)
+{
+    // check if lane is applicable
+
+
+    uint8_t elements = 2;
+    uint32_t operand1[VREG_S_LANE_COUNT];
+    uint32_t operand2[VREG_S_LANE_COUNT];
+    uint64_t operand3[VREG_D_LANE_COUNT];
+    uint64_t results[VREG_D_LANE_COUNT];
+    
+    
+    read_all_s_vreg(s, Vn, operand1);
+    read_all_s_vreg(s, Vm, operand2);
+    read_all_d_vreg(s, Vd, operand3);
+
+    int64_t element2 = (int64_t)(int32_t)operand2[lane];
+    
+    for (size_t e = 0; e < elements; e++)
+    {
+        int64_t element1 = (int64_t)(int32_t)operand1[e + elements];
+        int64_t element3 = (int64_t)(int64_t)operand3[e];
+        int64_t product = element1 * element2;
+        int64_t result = element3 + product;
+        results[e] = (uint64_t)(int64_t) result;
+    }
+
+    write_all_d_vreg(s, Vd, results);    
+}
+
+
+
+/*
+compile to: sshr Vd.2d, Vn.2d, #imm
+action: 
+ref: a-profile: C7-
+*/
+static inline void sshr_vd2d_vn2d_imm(a64rf_state_t *s,
+                                      const a64rf_vreg_idx_t Vd,
+                                      const a64rf_vreg_idx_t Vn,
+                                      const uint32_t imm)
+{
+    // check if imm is applicable
+
+    uint8_t elements = 2;
+    uint64_t operand1[VREG_D_LANE_COUNT];
+    uint64_t results[VREG_D_LANE_COUNT];
+
+    read_all_d_vreg(s, Vn, operand1);
+    
+    for (size_t e = 0; e < elements; e++)
+    {
+        int64_t element1 = (int64_t)operand1[e];
+        element1 = element1 >> imm;
+        results[e] = (uint64_t)element1;
+    }
+    write_all_d_vreg(s, Vd, results);    
+}
+
+
+static inline void and_vd16b_vn16b_vm16b(a64rf_state_t *s,
+                                      const a64rf_vreg_idx_t Vd,
+                                      const a64rf_vreg_idx_t Vn,
+                                      const a64rf_vreg_idx_t Vm)
+{
+    uint64_t operand1[VREG_D_LANE_COUNT];
+    uint64_t operand2[VREG_D_LANE_COUNT];
+    uint64_t results[VREG_D_LANE_COUNT];
+
+    read_all_d_vreg(s, Vn, operand1);
+    read_all_d_vreg(s, Vm, operand2);
+
+    for (size_t e = 0; e < VREG_D_LANE_COUNT; e++)
+    {
+        uint64_t element1 = operand1[e];
+        uint64_t element2 = operand2[e];
+        uint64_t result = element1 & element2;
+        results[e] = result;
+    }
+    write_all_d_vreg(s, Vd, results);    
+}
+
+// we should, somehow, notice the user that, such syntax is not acceptable
+// for certain assembler.
+#define and_vd8h_vn8h_vm8h and_vd16b_vn16b_vm16b
+#define and_vd4s_vn4s_vm4s and_vd16b_vn16b_vm16b
+#define and_vd2d_vn2d_vm2d and_vd16b_vn16b_vm16b
+
+static inline void orr_vd16b_vn16b_vm16b(a64rf_state_t *s,
+                                      const a64rf_vreg_idx_t Vd,
+                                      const a64rf_vreg_idx_t Vn,
+                                      const a64rf_vreg_idx_t Vm)
+{
+    uint64_t operand1[VREG_D_LANE_COUNT];
+    uint64_t operand2[VREG_D_LANE_COUNT];
+    uint64_t results[VREG_D_LANE_COUNT];
+
+    read_all_d_vreg(s, Vn, operand1);
+    read_all_d_vreg(s, Vm, operand2);
+
+    for (size_t e = 0; e < VREG_D_LANE_COUNT; e++)
+    {
+        uint64_t element1 = operand1[e];
+        uint64_t element2 = operand2[e];
+        uint64_t result = element1 | element2;
+        results[e] = result;
+    }
+    write_all_d_vreg(s, Vd, results);    
+}
+
+// we should, somehow, notice the user that, such syntax is not acceptable
+// for certain assembler.
+#define orr_vd8h_vn8h_vm8h orr_vd16b_vn16b_vm16b
+#define orr_vd4s_vn4s_vm4s orr_vd16b_vn16b_vm16b
+#define orr_vd2d_vn2d_vm2d orr_vd16b_vn16b_vm16b
+
+
+
+static inline void shl_vd2d_vd2n_imm(a64rf_state_t *s,
+                                      const a64rf_vreg_idx_t Vd,
+                                      const a64rf_vreg_idx_t Vn,
+                                      const uint32_t imm)
+{
+    // check if imm is applicable
+
+    uint8_t elements = 2;
+    uint64_t operand1[VREG_D_LANE_COUNT];
+    uint64_t results[VREG_D_LANE_COUNT];
+
+    read_all_d_vreg(s, Vn, operand1);
+    
+    for (size_t e = 0; e < elements; e++)
+    {
+        uint64_t element1 = (uint64_t)operand1[e];
+        element1 = element1 << imm;
+        results[e] = (uint64_t)element1;
+    }
+    write_all_d_vreg(s, Vd, results);       
+}                                      
 
 
 /**********************************************************************
